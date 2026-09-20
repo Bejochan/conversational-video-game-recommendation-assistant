@@ -169,6 +169,24 @@ function renderMarkdown(text) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
 
+    if (line === "[ACTION_RECOMMEND_BUTTON]") {
+      flushList();
+      blocks.push(`
+        <div class="chat-fallback-action-card">
+          <div class="fallback-action-header">
+            <i data-lucide="compass" class="fallback-action-icon"></i>
+            <span class="fallback-action-badge">Mode Kurasi Terfokus</span>
+          </div>
+          <p class="fallback-action-desc">Sistem ELYSIA siap menyajikan kurasi rekomendasi video game terbaik berdasarkan intisari kata kunci yang telah Anda diskusikan.</p>
+          <button type="button" class="btn-chat-action-recommend" onclick="triggerRecommend()">
+            <i data-lucide="sparkles"></i>
+            <span>Dapatkan Rekomendasi Game Sekarang</span>
+          </button>
+        </div>
+      `);
+      continue;
+    }
+
     // Check for list item (- item, * item, • item, or 1. item)
     const bulletMatch = line.match(/^[-*•]\s+(.+)$/);
     const numMatch = line.match(/^\d+[\.)]\s+(.+)$/);
@@ -354,12 +372,11 @@ async function sendMessage() {
 async function triggerRecommend() {
   if (isStreaming) return;
 
-  if (messageCount === 0) {
-    showToast("Silakan beritahu preferensi game Anda di obrolan terlebih dahulu.", "info");
-    return;
+  if (!sessionId) {
+    sessionId = "sess_" + Math.random().toString(36).substring(2, 12);
   }
 
-  showToast("ELYSIA sedang menganalisis DNA & preferensi Anda...", "info");
+  showToast("ELYSIA sedang menganalisis preferensi & DNA gaya bermain Anda...", "info");
   btnRecommend.disabled = true;
 
   try {
@@ -383,12 +400,13 @@ async function triggerRecommend() {
       
       const userDna = result.adjusted_dna || null;
       const mood = result.mood_applied || null;
+      const fallbackNotice = result.is_fallback ? result.fallback_notice : null;
 
       // 1. Render di sidebar drawer
-      renderSidebarRecommendations(result.games, userDna, mood);
+      renderSidebarRecommendations(result.games, userDna, mood, fallbackNotice);
       
       // 2. Render kartu langsung di dalam aliran chat agar tidak terpotong!
-      renderInChatRecommendations(result.games, userDna, mood);
+      renderInChatRecommendations(result.games, userDna, mood, fallbackNotice);
 
       // 3. Buka sidebar otomatis
       toggleSidebar(true);
@@ -662,9 +680,25 @@ function createGameCardHtml(game, index) {
   `;
 }
 
+// ── Banner Mode Terfokus / Fallback UX ────────────────────────────────────
+function createFallbackBannerHtml(notice) {
+  if (!notice) return "";
+  const title = notice.title || "Kurasi Mode Terfokus";
+  const message = notice.message || "";
+  return `
+    <div class="fallback-mode-banner">
+      <div class="fallback-banner-header">
+        <i data-lucide="sparkles" class="fallback-banner-icon"></i>
+        <span class="fallback-banner-title">${title}</span>
+      </div>
+      <p class="fallback-banner-text">${message}</p>
+    </div>
+  `;
+}
+
 // ── Render Rekomendasi di Sidebar Drawer ──────────────────────────────────
-function renderSidebarRecommendations(games, userDna, mood) {
-  const oldCards = gameCardsEl.querySelectorAll(".game-card, .dna-radar-summary-card");
+function renderSidebarRecommendations(games, userDna, mood, fallbackNotice = null) {
+  const oldCards = gameCardsEl.querySelectorAll(".game-card, .dna-radar-summary-card, .fallback-mode-banner");
   oldCards.forEach((c) => c.remove());
 
   if (!games || games.length === 0) {
@@ -677,6 +711,13 @@ function renderSidebarRecommendations(games, userDna, mood) {
   if (sidebarEmptyEl) sidebarEmptyEl.style.display = "none";
   sidebarCountEl.textContent = games.length;
   if (floatingBadgeEl) floatingBadgeEl.textContent = games.length;
+
+  // Jika ada notifikasi fallback / mode terfokus
+  if (fallbackNotice) {
+    const tempNotice = document.createElement("div");
+    tempNotice.innerHTML = createFallbackBannerHtml(fallbackNotice);
+    gameCardsEl.appendChild(tempNotice.firstElementChild);
+  }
 
   // Jika tersedia profil Playstyle DNA pengguna, render kartu Radar Chart di drawer
   if (userDna) {
@@ -695,9 +736,18 @@ function renderSidebarRecommendations(games, userDna, mood) {
 }
 
 // ── Render Rekomendasi Langsung di Aliran Bubble Chat (Anti-Terpotong) ────
-function renderInChatRecommendations(games, userDna, mood) {
-  const introText = "Berdasarkan analisis Playstyle DNA dan preferensi obrolan Anda, berikut adalah profil gaya bermain dan video game terbaik yang saya pilihkan untuk Anda:";
+function renderInChatRecommendations(games, userDna, mood, fallbackNotice = null) {
+  const introText = fallbackNotice
+    ? "Berikut adalah kurasi video game terbaik yang disintesis ELYSIA untuk Anda:"
+    : "Berdasarkan analisis Playstyle DNA dan preferensi obrolan Anda, berikut adalah profil gaya bermain dan video game terbaik yang saya pilihkan untuk Anda:";
   const bubble = appendMessage("elysia", introText);
+
+  // Banner mode terfokus jika dalam fallback mode
+  if (fallbackNotice) {
+    const tempNotice = document.createElement("div");
+    tempNotice.innerHTML = createFallbackBannerHtml(fallbackNotice);
+    bubble.appendChild(tempNotice.firstElementChild);
+  }
 
   // Jika tersedia profil Playstyle DNA pengguna, tampilkan kartu Radar Chart di dalam bubble chat
   if (userDna) {

@@ -102,18 +102,49 @@ def recommend():
     session_id = data.get("session_id")
     top_n = int(data.get("top_n", 6))
 
-    if not session_id or session_id not in _sessions:
-        return jsonify({"error": "Sesi tidak ditemukan."}), 404
+    if not session_id:
+        session_id = str(uuid.uuid4())
 
-    chat = _sessions[session_id]
+    chat = _get_session(session_id)
     user_text = chat.get_user_messages_text()
 
-    if not user_text.strip():
-        return jsonify({"error": "Belum ada percakapan yang bisa dianalisis."}), 400
-
     try:
+        if not user_text.strip():
+            # Jika user menekan tombol rekomendasi sebelum memulai obrolan
+            pref = {
+                "mood": None,
+                "pref_genres": [],
+                "max_budget": None,
+                "dna_estimate": {"hardcore": 0.5, "complex": 0.5, "adrenaline": 0.5},
+                "is_heuristic_fallback": True,
+            }
+            result = engine.get_recommendations(pref, top_n=top_n)
+            result["is_fallback"] = True
+            result["fallback_notice"] = {
+                "title": "Kurasi Pilihan Populer",
+                "message": (
+                    "Belum ada preferensi obrolan yang tercatat, sehingga ELYSIA menyajikan koleksi "
+                    "video game terpopuler dan terfavorit dengan Playstyle DNA seimbang sebagai inspirasi awal Anda."
+                ),
+            }
+            return jsonify(result)
+
         pref = chat.extract_preferences(user_text)
         result = engine.get_recommendations(pref, top_n=top_n)
+
+        if pref.get("is_heuristic_fallback"):
+            result["is_fallback"] = True
+            result["fallback_notice"] = {
+                "title": "Kurasi Mode Terfokus",
+                "message": (
+                    "Karena kapasitas analisis percakapan interaktif sedang mengambil jeda singkat, "
+                    "ELYSIA menyintesis rekomendasi ini langsung dari intisari kata kunci preferensi Anda. "
+                    "Silakan jelajahi kurasi judul di bawah ini atau tekan tombol Rekomendasi Ulang kapan saja."
+                ),
+            }
+        else:
+            result["is_fallback"] = False
+
         return jsonify(result)
     except Exception as exc:
         return jsonify({"error": str(exc)}), 500

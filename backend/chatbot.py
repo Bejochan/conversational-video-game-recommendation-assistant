@@ -9,7 +9,7 @@ from typing import Generator
 
 import google.generativeai as genai
 from backend.config import (
-    MODEL_NAME,
+    CANDIDATE_MODELS,
     CHAT_GENERATION_CONFIG,
     EXTRACTION_GENERATION_CONFIG,
 )
@@ -23,9 +23,9 @@ Persona & Gaya Bicara:
 3. Saat pengguna pertama kali menyapa, sambut mereka dengan ramah dan tanyakan:
    - Apa mood bermain mereka saat ini (santai, kompetitif, imersif, atau fokus)?
    - Genre atau tipe game apa yang lagi mereka inginkan?
-   - Berapa rentang budget mereka dalam Rupiah (IDR)?
+   - Berapa batasan anggaran dana mereka dalam Rupiah (IDR)?
 4. JANGAN langsung memberikan daftar rekomendasi tanpa tahu preferensi pengguna — ajak ngobrol dan gali dulu informasinya secara natural.
-5. Saat pengguna sudah memberikan cukup informasi (mood + genre/tipe game + budget), beritahu mereka bahwa kamu akan mencarikan rekomendasi sekarang dan minta mereka klik tombol 'Recommend' atau ketik 'recommend'.
+5. Saat pengguna sudah memberikan cukup informasi (mood + genre/tipe game + anggaran dana), beritahu mereka bahwa kamu akan mencarikan rekomendasi sekarang dan minta mereka klik tombol kurasi rekomendasi.
 6. Respons kamu harus ringkas, elegan, dan fokus. Hindari paragraf yang terlalu panjang.
 7. JANGAN gunakan emoji apapun dalam teks tanggapanmu. Jaga nada bicara tetap anggun, hangat, dan profesional.
 """
@@ -53,7 +53,7 @@ Panduan pengisian:
 - dna_estimate.complex: 0.0 untuk mekanik simpel, 1.0 untuk sistem game yang mendalam/kompleks.
 - dna_estimate.adrenaline: 0.0 untuk sangat damai/calming, 1.0 untuk penuh aksi/adrenalin tinggi.
 
-Contoh input: "Capek banget abis ujian, pengen yang santai dan adem. Budget 100rb aja."
+Contoh input: "Capek banget abis ujian, pengen yang santai dan adem. Batasan dana 100rb aja."
 Contoh output: {"mood":"relaxed","pref_genres":["casual","adventure","indie"],"max_budget":100000,"dna_estimate":{"hardcore":0.15,"complex":0.2,"adrenaline":0.1}}
 """
 
@@ -61,79 +61,254 @@ Contoh output: {"mood":"relaxed","pref_genres":["casual","adventure","indie"],"m
 class ELYSIAChat:
     """
     Satu instance per sesi pengguna.
-    Mengelola riwayat percakapan dengan Gemini dan menyediakan
-    metode untuk streaming response dan ekstraksi preferensi.
+    Mendukung Multi-Model Fallback (Opsi 1) dan Ekstraksi Heuristik (Opsi 3)
+    secara otomatis jika model LLM menemui batas kuota (HTTP 429).
     """
 
     def __init__(self):
-        # Model untuk percakapan utama
+        self._model_idx = 0
+        self._log: list[dict] = []
+        self._init_models(CANDIDATE_MODELS[self._model_idx])
+        self._rebuild_session()
+
+    def _init_models(self, model_name: str):
+        self.active_model_name = model_name
         self._chat_model = genai.GenerativeModel(
-            model_name=MODEL_NAME,
+            model_name=model_name,
             system_instruction=SYSTEM_PROMPT,
             generation_config=CHAT_GENERATION_CONFIG,
         )
-        # Model terpisah untuk ekstraksi JSON (temperature rendah, output JSON)
         self._extractor_model = genai.GenerativeModel(
-            model_name=MODEL_NAME,
+            model_name=model_name,
             system_instruction=EXTRACTION_PROMPT,
             generation_config=EXTRACTION_GENERATION_CONFIG,
         )
-        self._session = self._chat_model.start_chat(history=[])
-        self._log: list[dict] = []   # log percakapan lengkap (untuk save/load)
+
+    def _rebuild_session(self):
+        """Membangun ulang sesi chat Gemini dengan mempertahankan log obrolan sebelumnya."""
+        history = []
+        for item in self._log:
+            role = item.get("role")
+            content = item.get("content", "")
+            if role in ("user", "model") and content:
+                history.append({"role": role, "parts": [content]})
+        self._session = self._chat_model.start_chat(history=history)
 
     # ── Send Message ─────────────────────────────────────────────────────────
 
     def send_message(self, text: str) -> str:
-        """
-        Mengirim pesan dan mengembalikan respons lengkap (non-streaming).
-        Digunakan sebagai fallback atau untuk pengujian.
-        """
-        try:
-            resp = self._session.send_message(text)
-            answer = resp.text
-            self._log.append({"role": "user", "content": text})
-            self._log.append({"role": "model", "content": answer})
-            return answer
-        except Exception as exc:
-            raise RuntimeError(f"Gagal menghubungi Gemini API: {exc}") from exc
+        """Versi non-streaming dengan multi-model fallback."""
+        chunks = list(self.send_message_stream(text))
+        return "".join(chunks)
 
     def send_message_stream(self, text: str) -> Generator[str, None, None]:
         """
-        Generator yang mengalirkan teks respons chunk-per-chunk.
-        Digunakan oleh Flask endpoint SSE /api/chat/stream.
+        Mengalirkan respons teks secara streaming.
+        Bila model aktif menemui kuota 429 atau kendala, otomatis berpindah
+        ke model dengan kecanggihan terdekat berikutnya (Multi-Model Fallback).
+        Jika semua model habis, mengalirkan respons persona natural dan tombol kurasi.
         """
         self._log.append({"role": "user", "content": text})
         full_answer = ""
-        try:
-            stream = self._session.send_message(text, stream=True)
-            for chunk in stream:
-                if chunk.text:
-                    full_answer += chunk.text
-                    yield chunk.text
-            self._log.append({"role": "model", "content": full_answer})
-        except Exception as exc:
-            yield f"\n⚠️ Terjadi kendala saat menghubungi API: {exc}"
+        last_error = None
+
+        # Coba mulai dari model saat ini hingga seluruh model kandidat
+        start_idx = self._model_idx
+        num_models = len(CANDIDATE_MODELS)
+
+        for attempt in range(num_models):
+            idx = (start_idx + attempt) % num_models
+            candidate = CANDIDATE_MODELS[idx]
+
+            try:
+                if self.active_model_name != candidate:
+                    print(f"[*] ELYSIA failover: Mengalihkan chat ke model '{candidate}'...")
+                    self._init_models(candidate)
+                    self._rebuild_session()
+                    self._model_idx = idx
+
+                stream = self._session.send_message(text, stream=True)
+                for chunk in stream:
+                    if chunk.text:
+                        full_answer += chunk.text
+                        yield chunk.text
+
+                # Berhasil menyelesaikan streaming
+                self._log.append({"role": "model", "content": full_answer})
+                return
+
+            except Exception as exc:
+                last_error = exc
+                err_str = str(exc)
+                is_quota_error = "429" in err_str or "quota" in err_str.lower() or "resourceexhausted" in err_str.lower()
+                print(f"[!] Kendala pada model '{candidate}': {err_str[:120]}")
+
+                # Jika sudah sempat mengirimkan sebagian teks ke user, hentikan agar teks tidak tumpang tindih
+                if full_answer:
+                    self._log.append({"role": "model", "content": full_answer})
+                    return
+
+                # Lanjut mencoba model berikutnya
+                continue
+
+        # Jika seluruh model di CANDIDATE_MODELS gagal atau kuota habis:
+        fallback_narrative = (
+            "Mohon maaf, saat ini daya analisis percakapan dinamis saya sedang mengambil jeda sejenak "
+            "untuk menyeimbangkan kuota lalu lintas layanan. Namun jangan khawatir, catatan pembicaraan "
+            "dan preferensi gaming Anda tetap tersimpan rapi.\n\n"
+            "Anda dapat langsung menekan tombol di bawah ini agar saya menyajikan kurasi rekomendasi "
+            "video game terbaik berdasarkan kata kunci preferensi yang telah Anda sampaikan:\n\n"
+            "[ACTION_RECOMMEND_BUTTON]"
+        )
+        self._log.append({"role": "model", "content": fallback_narrative})
+        yield fallback_narrative
 
     # ── Preference Extraction ─────────────────────────────────────────────────
 
     def extract_preferences(self, conversation_text: str) -> dict:
         """
-        Mengirim ringkasan percakapan ke extractor model dan
-        mengembalikan dict preferensi terstruktur.
+        Mengekstrak preferensi gaming pengguna.
+        Mencoba extractor model LLM dengan multi-model cascade.
+        Bila seluruh model LLM terkendala/kuota habis, beralih ke ekstraksi heuristik (Opsi 3).
         """
-        try:
-            res = self._extractor_model.generate_content(
-                f"Ekstrak preferensi gaming dari percakapan ini:\n\n{conversation_text}"
-            )
-            return json.loads(res.text)
-        except (json.JSONDecodeError, Exception):
-            # Fallback netral jika ekstraksi gagal
-            return {
-                "mood": None,
-                "pref_genres": [],
-                "max_budget": None,
-                "dna_estimate": {"hardcore": 0.5, "complex": 0.5, "adrenaline": 0.5},
-            }
+        start_idx = self._model_idx
+        num_models = len(CANDIDATE_MODELS)
+
+        for attempt in range(num_models):
+            idx = (start_idx + attempt) % num_models
+            candidate = CANDIDATE_MODELS[idx]
+
+            try:
+                if self.active_model_name != candidate:
+                    self._init_models(candidate)
+                    self._model_idx = idx
+
+                res = self._extractor_model.generate_content(
+                    f"Ekstrak preferensi gaming dari percakapan ini:\n\n{conversation_text}"
+                )
+                text = res.text.strip()
+                # Bersihkan pembungkus markdown ```json bila ada
+                if text.startswith("```"):
+                    lines = text.split("\n")
+                    text = "\n".join(lines[1:-1] if lines[-1].startswith("```") else lines[1:])
+                data = json.loads(text)
+                data["is_heuristic_fallback"] = False
+                return data
+            except Exception as exc:
+                print(f"[!] Gagal ekstraksi pada model '{candidate}': {str(exc)[:100]}")
+                continue
+
+        # Fallback Heuristik Cerdas (Opsi 3)
+        print("[*] Menjalankan ekstraksi heuristik berbasis kata kunci (Fallback Mode)...")
+        return self._heuristic_extract_preferences(conversation_text)
+
+    def _heuristic_extract_preferences(self, text: str) -> dict:
+        """
+        Ekstraksi berbasis aturan/heuristik kata kunci ketika seluruh LLM tidak dapat diakses.
+        Mendeteksi mood, genre, batasan dana, dan mengestimasi Playstyle DNA secara akurat.
+        """
+        t = text.lower()
+
+        # 1. Mood Detection
+        mood = None
+        if any(w in t for w in ["santai", "relax", "chill", "adem", "tenang", "healing", "santuy", "capek", "istirahat", "rebahan"]):
+            mood = "relaxed"
+        elif any(w in t for w in ["kompetitif", "tryhard", "ranked", "pvp", "serius", "esport", "asah skill", "menang"]):
+            mood = "competitive"
+        elif any(w in t for w in ["imersif", "cerita", "story", "dunia", "lore", "larut", "petualangan", "narasi", "plot"]):
+            mood = "immersive"
+        elif any(w in t for w in ["fokus", "taktis", "strategi", "mikir", "teka-teki", "puzzle", "cermat", "manajemen"]):
+            mood = "focused"
+
+        # 2. Genre Detection (Mendukung istilah Indonesia & Gaming umum)
+        genres = []
+        genre_rules = [
+            ("rpg", ["rpg", "role-playing", "role playing", "jrpg"]),
+            ("action", ["action", "aksi", "tarung", "fighting", "hack and slash"]),
+            ("adventure", ["adventure", "petualangan", "eksplorasi"]),
+            ("strategy", ["strategy", "strategi", "taktis", "rts", "turn-based"]),
+            ("shooter", ["shooter", "tembak", "fps", "tps", "bedil"]),
+            ("casual", ["casual", "kasual", "cozy", "santai"]),
+            ("puzzle", ["puzzle", "teka-teki", "tebak"]),
+            ("simulation", ["simulation", "simulasi", "simulator", "manajemen", "tycoon"]),
+            ("indie", ["indie"]),
+            ("racing", ["racing", "balap", "balapan", "mobil"]),
+            ("sports", ["sports", "olahraga", "sepak bola", "bola"]),
+            ("horror", ["horror", "horor", "seram", "takut"]),
+            ("survival", ["survival", "bertahan hidup"]),
+            ("open world", ["open world", "dunia terbuka"]),
+        ]
+        for canonical, keywords in genre_rules:
+            if any(k in t for k in keywords):
+                genres.append(canonical)
+
+        # 3. Budget Detection (IDR)
+        max_budget = None
+        import re
+
+        if any(w in t for w in ["gratis", "free", "cuma-cuma", "tanpa biaya", "0 rupiah"]):
+            max_budget = 0
+        else:
+            # Pola: 100rb, 100k, 100 ribu, 150.000, 200000, rp 50.000
+            m = re.search(r'(?:budget|dana|anggaran|seharga|dibawah|maksimal|max)?\s*(?:rp\.?|idr)?\s*(\d+[\.,]?\d*)\s*(k|rb|ribu|juta)?', t)
+            if m:
+                num_str = m.group(1).replace('.', '').replace(',', '')
+                unit = (m.group(2) or "").lower()
+                try:
+                    val = int(num_str)
+                    if unit in ("k", "rb", "ribu"):
+                        val *= 1000
+                    elif unit == "juta":
+                        val *= 1000000
+                    if 0 <= val <= 20000000:
+                        max_budget = val
+                except ValueError:
+                    pass
+
+        # 4. Playstyle DNA Estimation
+        hardcore = 0.5
+        complex_val = 0.5
+        adrenaline = 0.5
+
+        if mood == "relaxed":
+            hardcore -= 0.25
+            complex_val -= 0.20
+            adrenaline -= 0.30
+        elif mood == "competitive":
+            hardcore += 0.30
+            complex_val += 0.15
+            adrenaline += 0.30
+        elif mood == "immersive":
+            hardcore += 0.10
+            complex_val += 0.25
+            adrenaline -= 0.10
+        elif mood == "focused":
+            hardcore += 0.15
+            complex_val += 0.25
+            adrenaline -= 0.10
+
+        if "casual" in genres:
+            hardcore -= 0.15
+            complex_val -= 0.15
+        if "strategy" in genres or "simulation" in genres:
+            complex_val += 0.20
+        if "action" in genres or "shooter" in genres:
+            adrenaline += 0.20
+        if "puzzle" in genres:
+            complex_val += 0.15
+            adrenaline -= 0.15
+
+        return {
+            "mood": mood,
+            "pref_genres": genres,
+            "max_budget": max_budget,
+            "dna_estimate": {
+                "hardcore": round(float(min(max(hardcore, 0.1), 0.9)), 2),
+                "complex": round(float(min(max(complex_val, 0.1), 0.9)), 2),
+                "adrenaline": round(float(min(max(adrenaline, 0.1), 0.9)), 2),
+            },
+            "is_heuristic_fallback": True,
+        }
 
     def get_user_messages_text(self) -> str:
         """Menggabungkan semua pesan pengguna sebagai teks untuk ekstraksi."""
@@ -145,8 +320,10 @@ class ELYSIAChat:
 
     def reset(self):
         """Mereset sesi percakapan ke kondisi awal."""
-        self._session = self._chat_model.start_chat(history=[])
+        self._model_idx = 0
+        self._init_models(CANDIDATE_MODELS[0])
         self._log.clear()
+        self._rebuild_session()
 
     def save_history(self, directory: str = ".") -> str:
         """Menyimpan riwayat percakapan ke file JSON. Mengembalikan path file."""
