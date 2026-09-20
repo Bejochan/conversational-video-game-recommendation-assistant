@@ -1,4 +1,4 @@
-# ELYSIA — Emotionally-Adjusted Ludic Yield Spatial Integrated Assistant
+# ELYSIA — Emotionally-adjusted Ludic Yield Spatial Integrated Assistant
 ### Conversational Video Game Recommendation Assistant berbasis Large Language Model (LLM) & Psychographic Playstyle DNA
 
 ELYSIA adalah asisten virtual interaktif berbasis kecerdasan buatan yang memadukan kapabilitas pemahaman bahasa alami dari **Google Gemini API** (`gemini-3.5-flash`) dengan sistem rekomendasi multi-aspek (**Playstyle DNA 3D, Dynamic Mood Modifier, dan Filter Anggaran Steam IDR**) yang diadaptasi dari basis data kurasi 24.082 video game.
