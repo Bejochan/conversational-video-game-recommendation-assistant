@@ -17,10 +17,8 @@ ELYSIA adalah asisten virtual interaktif berbasis kecerdasan buatan yang memaduk
 6. [Contoh Cuplikan Percakapan & Pengujian](#contoh-cuplikan-percakapan--pengujian)
 7. [Penjelasan Modul Kode](#penjelasan-modul-kode)
 8. [Catatan Pengembangan & Pembagian Jobdesk (Human vs AI)](#catatan-pengembangan--pembagian-jobdesk-human-vs-ai)
-   - [A. Prinsip Kolaborasi](#a-prinsip-kolaborasi)
-   - [B. Rincian Peran & Tanggung Jawab Pengembang (Human)](#b-rincian-peran--tanggung-jawab-pengembang-human)
-   - [C. Rincian Peran & Kontribusi AI Assistant (AI)](#c-rincian-peran--kontribusi-ai-assistant-ai)
-   - [D. Matriks Pembagian Tugas & Kontribusi](#d-matriks-pembagian-tugas--kontribusi)
+   - [A. Rincian Peran & Tanggung Jawab](#a-rincian-peran--tanggung-jawab)
+   - [B. Matriks Pembagian Tugas & Rationale Persentase](#b-matriks-pembagian-tugas--rationale-persentase)
 
 ---
 
@@ -301,66 +299,59 @@ ELYSIA : Terima kasih sudah mengobrol! Sampai jumpa di petualangan gaming beriku
 
 ## Catatan Pengembangan & Pembagian Jobdesk (Human vs AI)
 
-Proyek ini dikembangkan dengan paradigma kolaboratif **AI-Assisted Software Engineering** dan **Pair Programming**. Seluruh arsitektur konseptual, formulasi domain keilmuan, arah estetika, dan verifikasi hasil dipimpin oleh **Pengembang (Human)**, sementara **AI Coding Assistant** bertindak sebagai akselerator implementasi teknis, generator sintaks kode, dan mitra *troubleshooting*.
+Proyek ini dikembangkan secara kolaboratif menggunakan pendekatan **AI-Assisted Pair Programming**. Dalam proses ini, **Pengguna / Mahasiswa (Human)** bertindak sebagai pengarah kebutuhan (*director*), kurator dataset, penentu preferensi desain, dan penguji sistem (*human-in-the-loop*), sedangkan **AI Assistant** bertindak sebagai akselerator teknis yang menyusun sintaks kode, mengimplementasikan logika komputasi, dan mendiagnosis kendala teknis.
 
-### A. Prinsip Kolaborasi
-1. **Human-Led Architecture & Intent**: Visi produk, metodologi rekomendasi psikografis (Playstyle DNA), perancangan karakter/persona ELYSIA, serta evaluasi etika dan kualitas respons sepenuhnya dirumuskan dan dikontrol oleh pengembang.
-2. **AI-Accelerated Engineering**: AI dimanfaatkan untuk mempercepat penulisan kode berulang (*boilerplate*), menerjemahkan formula matematika ke operasi vektorisasi Pandas/NumPy, serta memformat antarmuka frontend secara presisi.
-3. **Iterative Problem Solving**: Kendala teknis yang muncul sepanjang siklus pengembangan (seperti perubahan ketersediaan model API, kompatibilitas encoding karakter pada sistem operasi Windows, dan integrasi streaming) diselesaikan melalui dialog kritis dan iterasi penyesuaian antara pengembang dan AI.
+Pembagian kontribusi di bawah ini disusun secara objektif dan realistis untuk mencerminkan porsi kerja nyata selama pengembangan proyek.
 
 ---
 
-### B. Rincian Peran & Tanggung Jawab Pengembang (Human)
+### A. Rincian Peran & Tanggung Jawab
 
-1. **Konseptualisasi & Domain Modeling**:
-   - Menggagas ide inti asisten cerdas ELYSIA sebagai solusi terhadap keterbatasan sistem pencarian game berbasis filter kata kunci tradisional.
-   - Merumuskan kerangka kerja **3D Psychographic Playstyle DNA** (*Casual vs Hardcore*, *Simple vs Complex*, *Calming vs Adrenaline*) serta aturan modulasi dinamis *Dynamic Mood Modifier*.
-2. **Pengumpulan & Kurasi Dataset**:
-   - Memilih dan menata dataset 24.082 game dari RAWG dan Steam.
-   - Memetakan struktur data mata uang Rupiah (IDR) asli dan atribut diskon Steam agar relevan dengan kebutuhan gamer di Indonesia.
-3. **Prompt Engineering & Persona Design**:
-   - Merancang persona ELYSIA: asisten kurator yang ramah, sopan, berwawasan mendalam, suportif, dan tidak menggunakan emoji (*strict zero-emoji policy*) guna mempertahankan impresi elegan.
-   - Menetapkan batasan instruksi (*guardrails*) agar chatbot tetap fokus pada topik video game dan rekomendasi yang konstruktif.
-   - Merancang skema output JSON terstruktur untuk mengekstrak entitas preferensi pengguna dari dialog bebas.
-4. **Artistic Direction & Pengalaman Pengguna (UI/UX)**:
-   - Menetapkan arah visual antarmuka bertema *editorial light* yang terinspirasi dari gaya ilustrasi manga *Veil* karya Kotteri dan minimalisme Google Gemini (warna kertas perkamen hangat `#FAF7F2`, tipografi serif editorial dipadu sans-serif modern).
-   - Menentukan struktur tata letak web: *slide-over drawer* untuk riwayat obrolan, kartu game berukuran seragam dengan label diskon jelas, dan ruang baca yang nyaman.
-5. **Validasi Kualitas & Pengujian Sistem**:
-   - Melakukan pengujian langsung dialog multi-turn untuk memverifikasi kemampuan retensi konteks model LLM.
-   - Menguji keandalan hasil rekomendasi terhadap berbagai skenario kasus nyata (misal: gamer berkepribadian introvert dengan anggaran terbatas di bawah Rp 200.000).
-   - Memeriksa keakuratan data harga dan relevansi skor kecocokan game.
+#### 1. Ideasi & Konseptualisasi Produk
+* **Kontribusi Human**: Menentukan tema tugas (asisten rekomendasi video game), mengusulkan pendekatan berbasis psikografis/kondisi pemain (bukan sekadar filter genre kaku), serta menetapkan batasan tema (estetika editorial, kebijakan *zero-emoji*).
+* **Kontribusi AI**: Membantu merumuskan nama akronim **ELYSIA** (*Emotionally-Adjusted Ludic Yield Spatial Integrated Assistant*), mengelaborasi konsep Playstyle DNA ke dalam 3 dimensi terukur (*Casual vs Hardcore*, *Simple vs Complex*, *Calming vs Adrenaline*), serta mendefinisikan skema modifikasi mood.
 
----
+#### 2. Penyediaan & Kurasi Data
+* **Kontribusi Human**: Memilih dataset `games.csv` (24.082 game) yang relevan, menentukan atribut penting yang wajib ada (metadata RAWG, harga pasar Steam IDR, persentase diskon, dan rating).
+* **Kontribusi AI**: Membantu penulisan skrip pembersihan data (*data cleaning*), penanganan nilai yang hilang (*missing values*), normalisasi tipe data harga, dan pengujian integritas struktur data dengan Pandas.
 
-### C. Rincian Peran & Kontribusi AI Assistant (AI)
+#### 3. Formulasi & Implementasi Algoritma Rekomendasi
+* **Kontribusi Human**: Menentukan logika bisnis yang diinginkan (rekomendasi harus mempertimbangkan kedekatan DNA, kemiripan genre, rating kualitas, dan kesesuaian anggaran), serta mengevaluasi apakah hasil rekomendasi terasa masuk akal bagi gamer.
+* **Kontribusi AI**: Merumuskan kalkulasi matematis (jarak Euclidean 3D pada ruang DNA dan Jaccard Similarity pada genre), menyusun formula skor gabungan terbobot (*weighted composite score*), serta mengoptimasi performa komputasi menggunakan vektorisasi NumPy/Pandas agar pencarian 24.082 game berlangsung instan (< 100 ms).
 
-1. **Implementasi Sintaks & Integrasi SDK**:
-   - Menulis kode integrasi resmi Google Generative AI SDK (`google-generativeai`) dengan mekanisme *streaming* respons (`stream=True`).
-   - Menyusun kerangka backend berbasis Flask (`app.py`) lengkap dengan endpoint Server-Sent Events (SSE) untuk transmisi data *real-time* ke antarmuka web.
-2. **Penerjemahan Formula Matematika ke Komputasi Vektor**:
-   - Mengimplementasikan rumus jarak Euclidean 3D dan koefisien Jaccard Similarity dalam operasi vektorisasi Pandas dan NumPy agar kalkulasi terhadap puluhan ribu game dapat diselesaikan dalam hitungan milidetik.
-3. **Penyusunan Kode Antarmuka (CSS & JavaScript)**:
-   - Menerjemahkan panduan estetika dari pengembang ke dalam kode Vanilla CSS modern (CSS custom properties, flexbox/grid responsive, micro-interactions, modal dialog).
-   - Mengimplementasikan logika JavaScript (`app.js`) untuk penanganan `ReadableStream`, rendering kartu game interaktif, dan parser Markdown bertingkat.
-4. **Investigasi & Penyelesaian Kendala Teknis (Debugging)**:
-   - **Migrasi Model**: Menyesuaikan konfigurasi model dari `gemini-2.5-flash` ke `gemini-3.5-flash` setelah API Google menghentikan dukungan versi sebelumnya untuk pengguna baru.
-   - **Encoding Terminal Windows**: Mengatasi kendala `UnicodeEncodeError: charmap` pada konsol Windows PowerShell dengan membersihkan karakter non-ASCII dan menstandarkan format log ke tag berbasis ASCII (`[OK]`, `[Sistem]`, `[Perhatian]`).
-   - **Echo Input pada Notebook**: Memodifikasi fungsi `jalankan_elysia_interactive()` di Jupyter Notebook agar mencetak input pengguna (`Anda : ...`) secara eksplisit ke output sel, sehingga riwayat percakapan tampil berpasangan dan lengkap untuk tangkapan layar pengujian.
-   - **Environment Caching**: Memperbaiki pemuatan variabel lingkungan pada `backend/config.py` menggunakan `load_dotenv(..., override=True)` untuk mencegah pembacaan nilai usang dari sesi sistem.
-5. **Penyusunan Dokumentasi Teknis**:
-   - Membantu merapikan tata letak dokumentasi teknis pada `README.md`, menyusun tabel perbandingan, dan menstandarkan format transkrip pengujian.
+#### 4. Prompt Engineering & Persona Design
+* **Kontribusi Human**: Menetapkan identitas persona ELYSIA (santun, berwawasan luas, empatik, bernada tenang, dan larangan mutlak penggunaan emoji), serta menentukan skenario interaksi pengguna yang akan diuji.
+* **Kontribusi AI**: Menyusun naskah *System Prompt* secara komprehensif, merancang aturan batasan (*guardrails*) agar model tetap berada dalam konteks gaming, serta menyusun skema JSON terstruktur untuk mengekstraksi entitas preferensi pengguna.
+
+#### 5. Pengembangan Backend & Integrasi API
+* **Kontribusi Human**: Menentukan kebutuhan antarmuka (tersedia versi terminal CLI, notebook interaktif, dan server web lokal), menyediakan API Key Google Gemini, dan menjalankan server secara lokal.
+* **Kontribusi AI**: Menulis seluruh kode backend (`backend/app.py`, `backend/chatbot.py`, `backend/config.py`), mengintegrasikan Google Generative AI SDK, mengimplementasikan transmisi *real-time streaming* berbasis Server-Sent Events (SSE), serta merancang mekanisme penyimpanan dan pemuatan riwayat sesi (JSON history).
+
+#### 6. Desain & Pengembangan Antarmuka Web (UI/UX)
+* **Kontribusi Human**: Menentukan referensi visual spesifik (gaya editorial bernuansa *warm parchment* `#FAF7F2` yang terinspirasi dari manga *Veil* karya Kotteri dipadukan dengan kesederhanaan Google Gemini, tipografi serif-sans kontras, kartu game seragam, dan drawer riwayat percakapan).
+* **Kontribusi AI**: Menerjemahkan visi visual tersebut ke dalam kode Vanilla CSS lengkap (`frontend/style.css`), struktur HTML semantik (`frontend/index.html`), serta logika JavaScript klien (`frontend/app.js`) untuk menangani pembacaan stream SSE dan parser Markdown khusus.
+
+#### 7. Pengujian, Evaluasi, & Debugging
+* **Kontribusi Human**: Menjalankan pengujian langsung di lingkungan lokal (Windows PowerShell & VS Code Notebook), melakukan dialog multi-turn, serta menemukan kendala nyata di lapangan (seperti error encoding terminal Windows, model deprecated, dan input notebook yang tidak muncul di output).
+* **Kontribusi AI**: Menganalisis pesan error, mendiagnosis penyebab masalah (keterbatasan fungsi `input()` di Jupyter, perbedaan penanganan karakter non-ASCII di Windows `cp1252`, dan perubahan ketersediaan versi model Gemini API), serta menyediakan perbaikan kode secara terarah.
+
+#### 8. Penyusunan Dokumentasi
+* **Kontribusi Human**: Menentukan struktur pelaporan, menyediakan transkrip chat nyata dan tangkapan layar pengujian, serta memastikan isi dokumentasi jujur dan sesuai dengan hasil eksperimen.
+* **Kontribusi AI**: Menyusun draf teks dokumentasi teknis, menata struktur Markdown, membuat diagram alur ASCII, dan merapikan tabel perbandingan.
 
 ---
 
-### D. Matriks Pembagian Tugas & Kontribusi
+### B. Matriks Pembagian Tugas & Rationale Persentase
 
-| Aspek / Tahapan Proyek | Tanggung Jawab Human (Pengembang) | Kontribusi AI Assistant | Dominasi Kontribusi |
-| :--- | :--- | :--- | :---: |
-| **Ideasi & Konseptualisasi Produk** | Merumuskan konsep ELYSIA, Playstyle DNA 3D, dan Dynamic Mood Modifier | Memberikan referensi penamaan akronim dan eksplorasi fitur pelengkap | **Human (90%)** |
-| **Penyediaan & Kurasi Data** | Mengumpulkan, menata dataset 24.082 game, memetakan harga Steam IDR | Membantu penulisan skrip pembersihan data dan pengisian nilai kosong | **Human (75%)** |
-| **Formulasi Algoritma Rekomendasi** | Merancang logika pembobotan gabungan (DNA + Jaccard + Rating + Budget) | Mengimplementasikan formula ke dalam operasi vektor NumPy/Pandas yang efisien | **Kolaboratif (50/50)** |
-| **Prompt Engineering & Persona** | Merancang kepribadian asisten, batasan instruksi (*zero-emoji*), skema JSON preferensi | Membantu pengujian konsistensi respons prompt dan penataan format template | **Human (70%)** |
-| **Backend & Integrasi API** | Mengarahkan kebutuhan arsitektur modular (CLI, Notebook, dan Web REST API) | Menulis kode integrasi Gemini API SDK, Flask SSE Streaming, dan Session Management | **AI (70%)** |
-| **Desain Antarmuka (UI/UX)** | Menentukan visi estetika editorial light (*warm parchment*), tata letak drawer dan kartu | Menulis implementasi Vanilla CSS dan logika DOM JavaScript sesuai panduan | **Kolaboratif (50/50)** |
-| **Pengujian, Evaluasi & Debugging** | Menjalankan skenario pengujian, mengevaluasi mutu rekomendasi, melaporkan kendala | Menganalisis log error, migrasi versi model, mengatasi bug encoding & I/O notebook | **Kolaboratif (50/50)** |
-| **Dokumentasi & Pelaporan** | Menyusun materi laporan, mereview substansi ilmiah, memvalidasi kejujuran akademik | Merapikan format Markdown, menyusun tabel matriks, dan menstrukturkan daftar isi | **Kolaboratif (50/50)** |
+Tabel berikut merangkum proporsi keterlibatan beserta alasan objektif di balik pembagian tersebut:
+
+| Aspek Proyek | Porsi Human | Porsi AI | Alasan Penentuan Persentase |
+| :--- | :---: | :---: | :--- |
+| **Ideasi & Konseptualisasi** | 45% | 55% | Ide dasar dan batasan topik datang dari pengguna, namun elaborasi nama akronim, perumusan dimensi Playstyle DNA secara terstruktur, dan pematangan konsep banyak dieksplorasi bersama AI. |
+| **Penyediaan & Kurasi Data** | 60% | 40% | Pengguna menentukan dan menyediakan dataset game yang digunakan serta menetapkan variabel pentingnya, sedangkan AI membantu penulisan skrip pembersihan dan transformasi data. |
+| **Algoritma Rekomendasi** | 35% | 65% | Pengguna menetapkan kriteria dan logika bisnis rekomendasi, sedangkan formulasi matematis (Euclidean 3D, Jaccard) dan implementasi komputasi vektorisasi efisien dikerjakan oleh AI. |
+| **Prompt Engineering & Persona** | 40% | 60% | Karakteristik nada bicara dan batasan ketat (*zero-emoji*) ditentukan oleh pengguna, sementara perancangan teks prompt terstruktur dan skema JSON ekstraksi disusun oleh AI. |
+| **Backend & Integrasi API** | 25% | 75% | Pengguna mengarahkan arsitektur dan kebutuhan endpoint, namun penulisan sintaks kode Flask, integrasi SDK Gemini, SSE streaming, dan penanganan exception sepenuhnya diimplementasikan oleh AI. |
+| **Desain Antarmuka Web (UI/UX)** | 30% | 70% | Arahan estetika (*warm parchment*, gaya editorial manga *Veil*) dan layout berasal dari pengguna, sedangkan seluruh penulisan kode CSS modern, HTML, dan JavaScript interaktif dikerjakan oleh AI. |
+| **Pengujian & Troubleshooting** | 45% | 55% | Pengujian dilakukan langsung oleh pengguna pada lingkungan lokal dan pengguna yang mendeteksi anomali/bug, sementara diagnosis teknis dan penulisan solusi perbaikan dilakukan oleh AI. |
+| **Penyusunan Dokumentasi** | 40% | 60% | Pengguna mengarahkan substansi, data pengujian, dan transparansi laporan, sedangkan penyusunan redaksi kalimat, tata letak tabel, dan formatting dokumen dibantu oleh AI. |
