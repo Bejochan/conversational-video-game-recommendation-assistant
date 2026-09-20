@@ -381,11 +381,14 @@ async function triggerRecommend() {
     if (result.games && result.games.length > 0) {
       currentRecommendations = result.games;
       
+      const userDna = result.adjusted_dna || null;
+      const mood = result.mood_applied || null;
+
       // 1. Render di sidebar drawer
-      renderSidebarRecommendations(result.games);
+      renderSidebarRecommendations(result.games, userDna, mood);
       
       // 2. Render kartu langsung di dalam aliran chat agar tidak terpotong!
-      renderInChatRecommendations(result.games);
+      renderInChatRecommendations(result.games, userDna, mood);
 
       // 3. Buka sidebar otomatis
       toggleSidebar(true);
@@ -398,6 +401,132 @@ async function triggerRecommend() {
   } finally {
     btnRecommend.disabled = false;
   }
+}
+
+// ── Playstyle DNA Radar Chart SVG Generator ──────────────────────────────
+function createPlaystyleRadarSvg(dna, size = 160, isMini = false) {
+  const hardcore = Math.max(0.12, Math.min(1.0, dna.hardcore || 0.5));
+  const complex = Math.max(0.12, Math.min(1.0, dna.complex || 0.5));
+  const adrenaline = Math.max(0.12, Math.min(1.0, dna.adrenaline || 0.5));
+
+  const cx = size / 2;
+  const cy = size / 2;
+  const maxR = isMini ? size * 0.42 : size * 0.36;
+
+  // 3 sudut sumbu (radian):
+  // Sumbu 1: Hardcore (Atas: -PI/2)
+  // Sumbu 2: Kompleksitas (Kanan-Bawah: PI/6)
+  // Sumbu 3: Adrenalin (Kiri-Bawah: 5*PI/6)
+  const angleH = -Math.PI / 2;
+  const angleC = Math.PI / 6;
+  const angleA = (5 * Math.PI) / 6;
+
+  // Koordinat titik data
+  const xH = (cx + maxR * hardcore * Math.cos(angleH)).toFixed(1);
+  const yH = (cy + maxR * hardcore * Math.sin(angleH)).toFixed(1);
+
+  const xC = (cx + maxR * complex * Math.cos(angleC)).toFixed(1);
+  const yC = (cy + maxR * complex * Math.sin(angleC)).toFixed(1);
+
+  const xA = (cx + maxR * adrenaline * Math.cos(angleA)).toFixed(1);
+  const yA = (cy + maxR * adrenaline * Math.sin(angleA)).toFixed(1);
+
+  // Garis kisi latar belakang segitiga
+  let gridHtml = "";
+  const levels = isMini ? [1.0, 0.5] : [1.0, 0.66, 0.33];
+  levels.forEach((lvl) => {
+    const gxH = (cx + maxR * lvl * Math.cos(angleH)).toFixed(1);
+    const gyH = (cy + maxR * lvl * Math.sin(angleH)).toFixed(1);
+    const gxC = (cx + maxR * lvl * Math.cos(angleC)).toFixed(1);
+    const gyC = (cy + maxR * lvl * Math.sin(angleC)).toFixed(1);
+    const gxA = (cx + maxR * lvl * Math.cos(angleA)).toFixed(1);
+    const gyA = (cy + maxR * lvl * Math.sin(angleA)).toFixed(1);
+    gridHtml += `<polygon points="${gxH},${gyH} ${gxC},${gyC} ${gxA},${gyA}" fill="none" stroke="rgba(197, 139, 36, ${lvl === 1.0 ? 0.35 : 0.16})" stroke-width="${lvl === 1.0 ? (isMini ? 1 : 1.2) : 0.8}" stroke-dasharray="${lvl === 1.0 ? 'none' : '3,3'}" />`;
+  });
+
+  // Garis Sumbu
+  const axH = (cx + maxR * Math.cos(angleH)).toFixed(1);
+  const ayH = (cy + maxR * Math.sin(angleH)).toFixed(1);
+  const axC = (cx + maxR * Math.cos(angleC)).toFixed(1);
+  const ayC = (cy + maxR * Math.sin(angleC)).toFixed(1);
+  const axA = (cx + maxR * Math.cos(angleA)).toFixed(1);
+  const ayA = (cy + maxR * Math.sin(angleA)).toFixed(1);
+
+  const axisLines = `
+    <line x1="${cx}" y1="${cy}" x2="${axH}" y2="${ayH}" stroke="rgba(197, 139, 36, 0.22)" stroke-width="${isMini ? 0.8 : 1}" />
+    <line x1="${cx}" y1="${cy}" x2="${axC}" y2="${ayC}" stroke="rgba(197, 139, 36, 0.22)" stroke-width="${isMini ? 0.8 : 1}" />
+    <line x1="${cx}" y1="${cy}" x2="${axA}" y2="${ayA}" stroke="rgba(197, 139, 36, 0.22)" stroke-width="${isMini ? 0.8 : 1}" />
+  `;
+
+  // Label Sumbu (khusus radar ukuran penuh)
+  let labelsHtml = "";
+  if (!isMini) {
+    labelsHtml = `
+      <text x="${axH}" y="${Number(ayH) - 8}" text-anchor="middle" fill="#201B17" font-size="10.5" font-weight="600" font-family="'Plus Jakarta Sans', sans-serif">Hardcore (${Math.round(hardcore * 100)}%)</text>
+      <text x="${Number(axC) + 6}" y="${Number(ayC) + 12}" text-anchor="start" fill="#201B17" font-size="10.5" font-weight="600" font-family="'Plus Jakarta Sans', sans-serif">Kompleks (${Math.round(complex * 100)}%)</text>
+      <text x="${Number(axA) - 6}" y="${Number(ayA) + 12}" text-anchor="end" fill="#201B17" font-size="10.5" font-weight="600" font-family="'Plus Jakarta Sans', sans-serif">Adrenalin (${Math.round(adrenaline * 100)}%)</text>
+    `;
+  }
+
+  return `
+    <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" class="radar-svg ${isMini ? 'mini' : ''}">
+      ${gridHtml}
+      ${axisLines}
+      <!-- Poligon Playstyle DNA -->
+      <polygon points="${xH},${yH} ${xC},${yC} ${xA},${yA}" fill="rgba(197, 139, 36, 0.26)" stroke="#C58B24" stroke-width="${isMini ? 1.6 : 2.2}" stroke-linejoin="round" />
+      <!-- Titik Vertex -->
+      <circle cx="${xH}" cy="${yH}" r="${isMini ? 2 : 3.5}" fill="#C58B24" stroke="#FFFFFF" stroke-width="${isMini ? 0.8 : 1.2}" />
+      <circle cx="${xC}" cy="${yC}" r="${isMini ? 2 : 3.5}" fill="#C58B24" stroke="#FFFFFF" stroke-width="${isMini ? 0.8 : 1.2}" />
+      <circle cx="${xA}" cy="${yA}" r="${isMini ? 2 : 3.5}" fill="#C58B24" stroke="#FFFFFF" stroke-width="${isMini ? 0.8 : 1.2}" />
+      ${labelsHtml}
+    </svg>
+  `;
+}
+
+// ── HTML Kartu Rangkuman DNA Radar ────────────────────────────────────────
+function createRadarSummaryCardHtml(dna, mood) {
+  const moodLabel = mood && mood !== "none" ? `Mood: ${mood}` : "Profil Gaya Bermain";
+  const hardcorePct = Math.round((dna.hardcore || 0.5) * 100);
+  const complexPct = Math.round((dna.complex || 0.5) * 100);
+  const adrenalinePct = Math.round((dna.adrenaline || 0.5) * 100);
+
+  return `
+    <div class="dna-radar-summary-card">
+      <div class="dna-radar-header">
+        <div class="dna-radar-title-group">
+          <i data-lucide="compass"></i>
+          <span class="dna-radar-title">Profil Playstyle DNA Teridentifikasi</span>
+        </div>
+        <span class="dna-mood-badge">${moodLabel}</span>
+      </div>
+
+      <div class="dna-radar-body">
+        <div class="dna-radar-canvas-wrap">
+          ${createPlaystyleRadarSvg(dna, 170, false)}
+        </div>
+
+        <div class="dna-radar-metrics">
+          <div class="dna-metric-row">
+            <span class="dna-metric-name">Casual ↔ Hardcore</span>
+            <span class="dna-metric-val">${hardcorePct}%</span>
+          </div>
+          <div class="dna-track"><div class="dna-fill" style="width: ${hardcorePct}%"></div></div>
+
+          <div class="dna-metric-row">
+            <span class="dna-metric-name">Simple ↔ Kompleks</span>
+            <span class="dna-metric-val">${complexPct}%</span>
+          </div>
+          <div class="dna-track"><div class="dna-fill" style="width: ${complexPct}%"></div></div>
+
+          <div class="dna-metric-row">
+            <span class="dna-metric-name">Calm ↔ Adrenalin</span>
+            <span class="dna-metric-val">${adrenalinePct}%</span>
+          </div>
+          <div class="dna-track"><div class="dna-fill" style="width: ${adrenalinePct}%"></div></div>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 // ── Helper: Dapatkan Poster Game Berkualitas Tinggi ───────────────────────
@@ -417,7 +546,7 @@ function getGamePosterUrl(game) {
   return "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600&q=80";
 }
 
-// ── Template HTML Kartu Game (Lengkap, Poster Jelas, Bebas Terpotong) ──────
+// ── Template HTML Kartu Game (Lengkap dengan Mini Radar DNA) ──────────────
 function createGameCardHtml(game, index) {
   // Format harga IDR
   let priceText = "Gratis";
@@ -438,15 +567,15 @@ function createGameCardHtml(game, index) {
     }
   }
 
-  // Genre tags
+  // Genre pills
   const genresList = (game.genres || "")
-    .split("||")
+    .split(",")
     .map((g) => g.trim())
-    .filter((g) => g.length > 0)
+    .filter(Boolean)
     .slice(0, 3);
 
   const genresHtml = genresList
-    .map((g) => `<span class="genre-tag">${g}</span>`)
+    .map((g) => `<span class="game-genre-pill">${g}</span>`)
     .join("");
 
   // Steam link
@@ -490,22 +619,30 @@ function createGameCardHtml(game, index) {
             <span>${game.match_label || "Tinggi"}</span>
           </div>
 
-          <div class="dna-bar-item">
-            <span class="dna-name">Hardcore</span>
-            <div class="dna-track"><div class="dna-fill" style="width: ${hardcorePct}%"></div></div>
-            <span class="dna-val">${hardcorePct}%</span>
-          </div>
+          <div class="game-dna-flex">
+            <div class="game-dna-radar-mini" title="Radar Playstyle DNA Game">
+              ${createPlaystyleRadarSvg(dna, 58, true)}
+            </div>
 
-          <div class="dna-bar-item">
-            <span class="dna-name">Kompleksitas</span>
-            <div class="dna-track"><div class="dna-fill" style="width: ${complexPct}%"></div></div>
-            <span class="dna-val">${complexPct}%</span>
-          </div>
+            <div class="game-dna-bars-col">
+              <div class="dna-bar-item">
+                <span class="dna-name">Hardcore</span>
+                <div class="dna-track"><div class="dna-fill" style="width: ${hardcorePct}%"></div></div>
+                <span class="dna-val">${hardcorePct}%</span>
+              </div>
 
-          <div class="dna-bar-item">
-            <span class="dna-name">Adrenalin</span>
-            <div class="dna-track"><div class="dna-fill" style="width: ${adrenalinePct}%"></div></div>
-            <span class="dna-val">${adrenalinePct}%</span>
+              <div class="dna-bar-item">
+                <span class="dna-name">Kompleksitas</span>
+                <div class="dna-track"><div class="dna-fill" style="width: ${complexPct}%"></div></div>
+                <span class="dna-val">${complexPct}%</span>
+              </div>
+
+              <div class="dna-bar-item">
+                <span class="dna-name">Adrenalin</span>
+                <div class="dna-track"><div class="dna-fill" style="width: ${adrenalinePct}%"></div></div>
+                <span class="dna-val">${adrenalinePct}%</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -526,8 +663,8 @@ function createGameCardHtml(game, index) {
 }
 
 // ── Render Rekomendasi di Sidebar Drawer ──────────────────────────────────
-function renderSidebarRecommendations(games) {
-  const oldCards = gameCardsEl.querySelectorAll(".game-card");
+function renderSidebarRecommendations(games, userDna, mood) {
+  const oldCards = gameCardsEl.querySelectorAll(".game-card, .dna-radar-summary-card");
   oldCards.forEach((c) => c.remove());
 
   if (!games || games.length === 0) {
@@ -541,6 +678,13 @@ function renderSidebarRecommendations(games) {
   sidebarCountEl.textContent = games.length;
   if (floatingBadgeEl) floatingBadgeEl.textContent = games.length;
 
+  // Jika tersedia profil Playstyle DNA pengguna, render kartu Radar Chart di drawer
+  if (userDna) {
+    const tempRadar = document.createElement("div");
+    tempRadar.innerHTML = createRadarSummaryCardHtml(userDna, mood);
+    gameCardsEl.appendChild(tempRadar.firstElementChild);
+  }
+
   games.forEach((game, index) => {
     const temp = document.createElement("div");
     temp.innerHTML = createGameCardHtml(game, index);
@@ -551,9 +695,16 @@ function renderSidebarRecommendations(games) {
 }
 
 // ── Render Rekomendasi Langsung di Aliran Bubble Chat (Anti-Terpotong) ────
-function renderInChatRecommendations(games) {
-  const introText = "Berdasarkan analisis Playstyle DNA dan preferensi obrolan Anda, berikut adalah video game terbaik yang saya pilihkan untuk Anda:";
+function renderInChatRecommendations(games, userDna, mood) {
+  const introText = "Berdasarkan analisis Playstyle DNA dan preferensi obrolan Anda, berikut adalah profil gaya bermain dan video game terbaik yang saya pilihkan untuk Anda:";
   const bubble = appendMessage("elysia", introText);
+
+  // Jika tersedia profil Playstyle DNA pengguna, tampilkan kartu Radar Chart di dalam bubble chat
+  if (userDna) {
+    const tempRadar = document.createElement("div");
+    tempRadar.innerHTML = createRadarSummaryCardHtml(userDna, mood);
+    bubble.appendChild(tempRadar.firstElementChild);
+  }
 
   const deckWrapper = document.createElement("div");
   deckWrapper.className = "chat-deck-container";
