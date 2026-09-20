@@ -1,43 +1,43 @@
 /* ==========================================================================
-   ELYSIA — Warm Ivory & Emma (Veil) Aesthetic Stylesheet
-   Minimalist, Light Theme inspired by Google Gemini & DeepSeek
+   ELYSIA — Emma (Veil by Kotteri) Auburn Hair Palette Stylesheet
+   Minimalist, Light Theme inspired by Google Gemini & Kotteri's Warm Aesthetic
    ========================================================================== */
 
 /* ── CSS Variables ──────────────────────────────────────────────────────── */
 :root {
-  /* Emma / Veil Palette: Warm Parchment & Cashmere Tones */
-  --bg-app:          #FAF7F2;  /* Soft Warm Ivory / Parchment */
-  --bg-sidebar:      #F4EFEA;  /* Muted Cashmere Cream */
-  --bg-surface:      #FFFFFF;  /* Pure Clean Surface */
-  --bg-surface-warm: #FDFCFA;  /* Subtle Off-White Card */
-  --bg-hover:        #EFE9E0;  /* Subtle Warm Hover */
-  --bg-active:       #E8E0D5;  /* Subtle Pressed State */
+  /* Emma / Veil Palette: Warm Parchment & Emma's Russet Auburn Hair Tones */
+  --bg-app:          #FAF6F0;  /* Warm Antique Book Paper / Ivory Parchment */
+  --bg-sidebar:      #F5EFE8;  /* Soft Cashmere Linen */
+  --bg-surface:      #FFFFFF;  /* Pure Crisp Surface */
+  --bg-surface-warm: #FCFAF7;  /* Subtle Warm Off-White Card */
+  --bg-hover:        #EFE7DE;  /* Warm Linen Hover */
+  --bg-active:       #E7DDD2;  /* Subtle Pressed State */
 
   /* Borders & Dividers */
-  --border-subtle:   #ECE5DC;
-  --border-medium:   #DFD6CA;
-  --border-focus:    #B37D4E;
+  --border-subtle:   #ECE3D7;
+  --border-medium:   #DED3C4;
+  --border-focus:    #A8432B;  /* Emma's Signature Auburn Red-Brown */
 
   /* Typography Colors */
-  --text-primary:    #2C2522;  /* Deep Warm Espresso */
-  --text-secondary:  #6E645E;  /* Warm Taupe */
-  --text-muted:      #9C928A;  /* Soft Muted Gray-Beige */
+  --text-primary:    #2A1A16;  /* Deep Warm Auburn-Espresso */
+  --text-secondary:  #6B5750;  /* Warm Chestnut Taupe */
+  --text-muted:      #9C8982;  /* Soft Muted Russet-Beige */
   --text-inverse:    #FFFFFF;
 
-  /* Accent Colors (Emma's Camel Coat & Terracotta Accents) */
-  --accent-camel:    #B37D4E;  /* Warm Camel Amber */
-  --accent-camel-hover: #9E693D;
-  --accent-camel-soft:  rgba(179, 125, 78, 0.12);
-  --accent-terra:    #9E5948;  /* Soft Terracotta */
-  --accent-terra-soft: rgba(158, 89, 72, 0.10);
-  --accent-sage:     #52796F;  /* Warm Olive/Sage (for positive ratings) */
-  --accent-sage-soft: rgba(82, 121, 111, 0.12);
+  /* Accent Colors (Emma's Iconic Auburn Hair & Terracotta Highlights) */
+  --accent-camel:    #A8432B;  /* Emma's Auburn Hair (Rich Russet Copper) */
+  --accent-camel-hover: #8F341E; /* Deep Hair Shadow */
+  --accent-camel-soft:  rgba(168, 67, 43, 0.10); /* Soft Auburn Tint */
+  --accent-terra:    #C85D3B;  /* Emma's Hair Highlight (Warm Cinnamon / Terracotta) */
+  --accent-terra-soft: rgba(200, 93, 59, 0.10);
+  --accent-sage:     #4E786B;  /* Muted Forest Olive (for positive score ratings) */
+  --accent-sage-soft: rgba(78, 120, 107, 0.12);
 
   /* Chat Bubbles */
-  --bubble-user:     #F0E9E0;
-  --bubble-user-border: #E5DCD1;
+  --bubble-user:     #F2E9DF;  /* Soft Warm Linen User Bubble */
+  --bubble-user-border: #E6DCD0;
   --bubble-elysia:   #FFFFFF;
-  --bubble-elysia-border: #ECE5DC;
+  --bubble-elysia-border: #ECE3D7;
 
   /* UI Tokens */
   --radius-sm:       6px;
@@ -46,9 +46,9 @@
   --radius-xl:       26px;
   --radius-full:     9999px;
 
-  --shadow-subtle:   0 1px 3px rgba(44, 37, 34, 0.04), 0 1px 2px rgba(44, 37, 34, 0.02);
-  --shadow-card:     0 4px 16px rgba(44, 37, 34, 0.05), 0 1px 3px rgba(44, 37, 34, 0.03);
-  --shadow-floating: 0 8px 30px rgba(44, 37, 34, 0.08), 0 2px 8px rgba(44, 37, 34, 0.04);
+  --shadow-subtle:   0 1px 3px rgba(42, 26, 22, 0.04), 0 1px 2px rgba(42, 26, 22, 0.02);
+  --shadow-card:     0 4px 16px rgba(42, 26, 22, 0.05), 0 1px 3px rgba(42, 26, 22, 0.03);
+  --shadow-floating: 0 8px 30px rgba(42, 26, 22, 0.08), 0 2px 8px rgba(42, 26, 22, 0.04);
 
   --transition-fast: 0.15s ease;
   --transition-base: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -140,7 +140,7 @@ html, body {
   align-items: center;
   justify-content: center;
   color: var(--text-inverse);
-  box-shadow: 0 2px 8px rgba(179, 125, 78, 0.25);
+  box-shadow: 0 2px 10px rgba(168, 67, 43, 0.28);
 }
 
 .brand-icon svg {
@@ -231,7 +231,7 @@ html, body {
 .btn-nav.active {
   background-color: var(--accent-camel-soft);
   color: var(--accent-camel);
-  border-color: rgba(179, 125, 78, 0.3);
+  border-color: rgba(168, 67, 43, 0.32);
 }
 
 .btn-nav svg {
@@ -263,7 +263,7 @@ html, body {
 .btn-icon.active {
   background-color: var(--accent-camel-soft);
   color: var(--accent-camel);
-  border-color: rgba(179, 125, 78, 0.25);
+  border-color: rgba(168, 67, 43, 0.25);
 }
 
 .btn-icon svg {
@@ -651,7 +651,7 @@ html, body {
 
 .chat-input-container:focus-within {
   border-color: var(--accent-camel);
-  box-shadow: 0 8px 32px rgba(179, 125, 78, 0.14), 0 0 0 2px rgba(179, 125, 78, 0.20);
+  box-shadow: 0 8px 32px rgba(168, 67, 43, 0.14), 0 0 0 2px rgba(168, 67, 43, 0.22);
 }
 
 .input-row {
@@ -722,7 +722,7 @@ html, body {
 .btn-tool.accent {
   background-color: var(--accent-camel-soft);
   color: var(--accent-camel);
-  border-color: rgba(179, 125, 78, 0.35);
+  border-color: rgba(168, 67, 43, 0.35);
   font-weight: 600;
 }
 
@@ -1248,7 +1248,7 @@ html, body {
 .toast-notice svg {
   width: 16px;
   height: 16px;
-  color: #E2B180;
+  color: var(--accent-terra);
 }
 
 /* ── Animations ──────────────────────────────────────────────────────────── */
