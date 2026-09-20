@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ELYSIA — Conversational Video Game Assistant</title>
+  <meta name="description" content="ELYSIA adalah asisten rekomendasi video game berbasis kecerdasan buatan dengan pemahaman Playstyle DNA, preferensi genre, dan anggaran Steam Rupiah." />
+  
+  <!-- Google Fonts: Plus Jakarta Sans (Clean Modern) & Newsreader (Editorial Serif) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- External Stylesheet -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div id="app">
+    <!-- ── Main Chat Section ───────────────────────────────────────────── -->
+    <main class="main-wrapper">
+      
+      <!-- Top Navigation Bar -->
+      <header class="top-header">
+        <div class="header-left">
+          <div class="brand">
+            <div class="brand-icon">
+              <i data-lucide="sparkles"></i>
+            </div>
+            <div class="brand-info">
+              <span class="brand-title">ELYSIA</span>
+              <span class="brand-sub">Game Recommendation Assistant</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="header-right">
+          <div class="status-pill">
+            <span class="status-dot connecting" id="status-dot"></span>
+            <span id="status-text">Menghubungkan...</span>
+          </div>
+
+          <button class="btn-icon" id="btn-save" title="Simpan Riwayat Obrolan">
+            <i data-lucide="download"></i>
+          </button>
+
+          <button class="btn-icon" id="btn-clear" title="Mulai Sesi Baru">
+            <i data-lucide="rotate-ccw"></i>
+          </button>
+
+          <button class="btn-icon" id="btn-toggle-sidebar" title="Buka/Tutup Panel Rekomendasi">
+            <i data-lucide="panel-right"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- Scrollable Message Area -->
+      <div class="chat-scroll-container" id="chat-scroll">
+        <div class="chat-inner-width">
+          
+          <!-- Welcome Hero -->
+          <section class="welcome-hero" id="welcome-hero">
+            <h1 class="hero-title">Halo, saya <span class="highlight">ELYSIA</span></h1>
+            <p class="hero-description">
+              Saya siap membantu Anda menemukan video game yang tepat. Ceritakan genre favorit, suasana hati (mood) saat bermain, atau batasan anggaran yang Anda miliki.
+            </p>
+
+            <div class="suggestion-grid">
+              <div class="suggestion-chip" data-prompt="Rekomendasikan game RPG dengan alur cerita mendalam dan dunia yang luas.">
+                <span class="chip-title">
+                  <i data-lucide="book-open"></i>
+                  Cerita Mendalam
+                </span>
+                <span class="chip-desc">Game RPG berbobot narasi kuat dan eksplorasi seru.</span>
+              </div>
+
+              <div class="suggestion-chip" data-prompt="Saya ingin game santai untuk melepas penat di akhir pekan, gameplay ringan tanpa stres.">
+                <span class="chip-title">
+                  <i data-lucide="coffee"></i>
+                  Santai & Rileks
+                </span>
+                <span class="chip-desc">Pengalaman bermain nyaman untuk bersantai sore hari.</span>
+              </div>
+
+              <div class="suggestion-chip" data-prompt="Cari game aksi indie seru dengan harga di bawah Rp 100.000 di Steam.">
+                <span class="chip-title">
+                  <i data-lucide="tag"></i>
+                  Hemat & Berkualitas
+                </span>
+                <span class="chip-desc">Pilihan game terjangkau dengan ulasan sangat positif.</span>
+              </div>
+
+              <div class="suggestion-chip" data-prompt="Saya suka tantangan strategi dan mekanik yang kompleks. Apa game yang cocok?">
+                <span class="chip-title">
+                  <i data-lucide="swords"></i>
+                  Tantangan & Strategi
+                </span>
+                <span class="chip-desc">Uji ketelitian dan perencanaan taktis tingkat tinggi.</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Chat Messages Container -->
+          <div id="messages" style="display: flex; flex-direction: column; gap: 20px;"></div>
+
+          <!-- Typing Indicator -->
+          <div class="typing-row" id="typing-indicator">
+            <div class="typing-dots">
+              <span class="typing-dot"></span>
+              <span class="typing-dot"></span>
+              <span class="typing-dot"></span>
+            </div>
+            <span class="typing-label">ELYSIA sedang merangkai tanggapan...</span>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Floating Gemini-style Input Bar -->
+      <div class="chat-input-wrapper">
+        <div class="chat-input-container">
+          <div class="input-row">
+            <textarea
+              id="user-input"
+              rows="1"
+              placeholder="Ketik pesan atau preferensi bermain Anda di sini..."
+              autocomplete="off"
+            ></textarea>
+            
+            <button class="btn-send" id="send-btn" disabled title="Kirim Pesan (Enter)">
+              <i data-lucide="arrow-up"></i>
+            </button>
+          </div>
+
+          <div class="input-actions">
+            <div class="quick-tools">
+              <button class="btn-tool accent" id="btn-recommend" title="Ekstraksi preferensi dan berikan rekomendasi game">
+                <i data-lucide="sparkles"></i>
+                <span>Rekomendasikan Game</span>
+              </button>
+            </div>
+            <span class="input-hint">Tekan Enter untuk kirim, Shift + Enter untuk baris baru</span>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- ── Collapsible Recommendations Sidebar ────────────────────────── -->
+    <aside class="sidebar-drawer closed" id="sidebar-drawer">
+      <div class="sidebar-header">
+        <div class="sidebar-title-group">
+          <i data-lucide="gamepad-2"></i>
+          <h2 class="sidebar-title">Rekomendasi Game</h2>
+          <span class="sidebar-count-badge" id="sidebar-count">0</span>
+        </div>
+        <button class="btn-icon" id="btn-close-sidebar" title="Tutup Panel">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <div class="sidebar-content" id="game-cards">
+        <!-- Empty State -->
+        <div class="sidebar-empty" id="sidebar-empty">
+          <div class="sidebar-empty-icon">
+            <i data-lucide="compass"></i>
+          </div>
+          <h4>Belum Ada Rekomendasi</h4>
+          <p>Diskusikan kesukaan Anda dengan ELYSIA, lalu klik tombol "Rekomendasikan Game" untuk memunculkan pilihan terbaik.</p>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast-notice" id="toast">
+    <i data-lucide="info" id="toast-icon"></i>
+    <span id="toast-text">Notifikasi</span>
+  </div>
+
+  <!-- JavaScript -->
+  <script src="app.js"></script>
+
+</body>
+</html>
