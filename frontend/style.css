@@ -66,6 +66,7 @@
 
 html, body {
   height: 100%;
+  width: 100%;
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   background-color: var(--bg-app);
   color: var(--text-primary);
@@ -84,19 +85,19 @@ html, body {
 
 /* ── Main Chat Area (Gemini Style) ───────────────────────────────────────── */
 .main-wrapper {
-  flex: 1;
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
-  height: 100%;
-  min-width: 0;
-  background-color: var(--bg-app);
   position: relative;
-  transition: margin-right var(--transition-base);
+  overflow: hidden;
+  background-color: var(--bg-app);
 }
 
 /* ── Top Navigation Bar ─────────────────────────────────────────────────── */
 .top-header {
   height: 62px;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -104,12 +105,22 @@ html, body {
   background-color: var(--bg-app);
   border-bottom: 1px solid var(--border-subtle);
   z-index: 20;
+  flex-shrink: 0;
 }
 
-.header-left, .header-right {
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.header-right {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
 }
 
 .brand {
@@ -170,6 +181,7 @@ html, body {
   border: 1px solid var(--border-subtle);
   padding: 4px 12px;
   border-radius: var(--radius-full);
+  white-space: nowrap;
 }
 
 .status-dot {
@@ -179,6 +191,7 @@ html, body {
   background-color: var(--accent-sage);
   display: inline-block;
   box-shadow: 0 0 0 2px var(--accent-sage-soft);
+  flex-shrink: 0;
 }
 
 .status-dot.connecting {
@@ -206,6 +219,7 @@ html, body {
   font-weight: 500;
   cursor: pointer;
   transition: var(--transition-fast);
+  white-space: nowrap;
 }
 
 .btn-nav:hover {
@@ -237,6 +251,7 @@ html, body {
   justify-content: center;
   cursor: pointer;
   transition: var(--transition-fast);
+  flex-shrink: 0;
 }
 
 .btn-icon:hover {
@@ -256,17 +271,19 @@ html, body {
   height: 17px;
 }
 
-/* ── Persistent Floating Sidebar Button (Selalu Ada) ─────────────────────── */
+/* ── Persistent Floating Sidebar Button (Slide-out Tab di Tepi Kanan) ────── */
 .floating-sidebar-btn {
   position: fixed;
-  top: 76px;
-  right: 20px;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
   z-index: 25;
   background-color: var(--bg-surface);
   border: 1px solid var(--border-medium);
-  box-shadow: var(--shadow-card);
-  border-radius: var(--radius-full);
-  padding: 8px 14px;
+  border-right: none;
+  box-shadow: -4px 4px 18px rgba(44, 37, 34, 0.09);
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+  padding: 10px 14px 10px 12px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -280,14 +297,12 @@ html, body {
 .floating-sidebar-btn:hover {
   border-color: var(--accent-camel);
   background-color: var(--bg-surface-warm);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-floating);
+  padding-right: 18px;
+  box-shadow: -6px 6px 24px rgba(44, 37, 34, 0.14);
 }
 
 .floating-sidebar-btn.sidebar-open {
-  background-color: var(--accent-camel-soft);
-  border-color: var(--accent-camel);
-  color: var(--accent-camel);
+  display: none; /* Sembunyikan saat drawer terbuka */
 }
 
 .floating-sidebar-btn svg {
@@ -415,7 +430,7 @@ html, body {
   line-height: 1.4;
 }
 
-/* ── Message Bubble Structure ───────────────────────────────────────────── */
+/* ── Message Bubble Structure & Sempurna Tanpa Mepet ────────────────────── */
 .message-row {
   display: flex;
   gap: 16px;
@@ -476,10 +491,10 @@ html, body {
 }
 
 .message-bubble {
-  padding: 16px 20px;
+  padding: 18px 24px;
   border-radius: var(--radius-lg);
   font-size: 14.5px;
-  line-height: 1.65;
+  line-height: 1.7;
   word-break: break-word;
 }
 
@@ -501,11 +516,12 @@ html, body {
 }
 
 .message-bubble p {
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 .message-bubble p:last-child {
   margin-bottom: 0;
 }
+
 .message-bubble strong {
   font-weight: 600;
   color: var(--text-primary);
@@ -516,27 +532,39 @@ html, body {
 .message-bubble h3, .message-bubble h4 {
   font-family: 'Newsreader', serif;
   font-weight: 600;
-  margin: 12px 0 6px;
+  margin: 14px 0 8px;
   color: var(--text-primary);
 }
-.message-bubble h3 { font-size: 17px; }
-.message-bubble h4 { font-size: 15px; }
+.message-bubble h3 { font-size: 17.5px; }
+.message-bubble h4 { font-size: 15.5px; }
 
-.message-bubble ul, .message-bubble ol {
-  margin: 8px 0 8px 18px;
+/* ── Perbaikan Indentasi Listing (Jauh dari Frame, Rapi & Elegan) ───────── */
+.message-bubble ul,
+.message-bubble ol {
+  padding-left: 32px !important;
+  margin: 12px 0 16px 8px !important;
+  list-style-position: outside !important;
 }
+
 .message-bubble li {
-  margin-bottom: 4px;
+  margin-bottom: 10px !important;
+  padding-left: 6px !important;
+  line-height: 1.65 !important;
 }
+
+.message-bubble li:last-child {
+  margin-bottom: 0 !important;
+}
+
 .message-bubble hr {
   border: none;
   border-top: 1px solid var(--border-subtle);
-  margin: 14px 0;
+  margin: 16px 0;
 }
 
 /* ── In-Chat Recommendation Cards Grid ───────────────────────────────────── */
 .chat-deck-container {
-  margin-top: 14px;
+  margin-top: 16px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -740,25 +768,29 @@ html, body {
   text-align: center;
 }
 
-/* ── Collapsible Recommendations Sidebar (Right Drawer) ─────────────────── */
+/* ── Fixed Slide-Over Drawer (Tidak Memotong Header / Elemen Atas) ────────── */
 .sidebar-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
   width: var(--sidebar-width);
-  height: 100%;
+  max-width: 92vw;
+  height: 100vh;
   background-color: var(--bg-sidebar);
   border-left: 1px solid var(--border-medium);
+  box-shadow: -8px 0 32px rgba(44, 37, 34, 0.14);
   display: flex;
   flex-direction: column;
-  position: relative;
-  z-index: 30;
-  transition: transform var(--transition-slow), width var(--transition-slow);
-  flex-shrink: 0;
+  z-index: 50;
+  transform: translateX(0);
+  transition: transform var(--transition-slow);
 }
 
 .sidebar-drawer.closed {
   transform: translateX(100%);
-  width: 0;
-  margin-right: calc(-1 * var(--sidebar-width));
-  border-left-color: transparent;
+  box-shadow: none;
+  pointer-events: none;
 }
 
 .sidebar-header {
@@ -768,6 +800,7 @@ html, body {
   justify-content: space-between;
   border-bottom: 1px solid var(--border-subtle);
   background-color: var(--bg-sidebar);
+  flex-shrink: 0;
 }
 
 .sidebar-title-group {
@@ -870,11 +903,11 @@ html, body {
   transform: translateY(-2px);
 }
 
-/* Game Poster Banner (Generous 200px Height so Poster is Fully Visible) */
+/* Game Poster Banner (Generous 190px Height so Poster is Fully Visible) */
 .game-card-banner {
   position: relative;
   width: 100%;
-  height: 205px;
+  height: 190px;
   background-color: #1A1715;
   overflow: hidden;
 }
@@ -1237,20 +1270,17 @@ html, body {
 /* ── Responsive Adjustments ──────────────────────────────────────────────── */
 @media (max-width: 960px) {
   .sidebar-drawer {
-    position: absolute;
-    right: 0;
-    top: 0;
-    bottom: 0;
-    box-shadow: -8px 0 24px rgba(44, 37, 34, 0.14);
+    width: 100vw;
+    max-width: 100vw;
   }
 }
 
-@media (max-width: 680px) {
-  .top-header { padding: 0 16px; }
-  .chat-scroll-container { padding: 20px 16px 140px; }
-  .chat-input-wrapper { padding: 0 16px 16px; }
+@media (max-width: 720px) {
+  .top-header { padding: 0 14px; }
+  .chat-scroll-container { padding: 20px 14px 140px; }
+  .chat-input-wrapper { padding: 0 14px 16px; }
   .hero-title { font-size: 28px; }
-  .sidebar-drawer { width: 100vw; }
   .floating-sidebar-btn { display: none; }
   .btn-nav span { display: none; }
+  .status-pill { display: none; }
 }

@@ -136,23 +136,71 @@ document.querySelectorAll(".suggestion-chip").forEach((chip) => {
   });
 });
 
-// ── Markdown-lite Parser (Bebas Emoji) ────────────────────────────────────
+// ── Markdown-lite Parser (Bebas Emoji, Sempurna untuk List & Paragraf) ──
 function renderMarkdown(text) {
   if (!text) return "";
-  return text
+
+  // 1. Safety escape HTML
+  let raw = text
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
+    .replace(/>/g, "&gt;");
+
+  // 2. Inline styles (Bold, italic, headings, hr)
+  raw = raw
     .replace(/^### (.+)$/gm, "<h3>$1</h3>")
     .replace(/^#### (.+)$/gm, "<h4>$1</h4>")
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replace(/\*(.+?)\*/g, "<em>$1</em>")
-    .replace(/^---$/gm, "<hr>")
-    .replace(/^\s*[-•]\s+(.+)$/gm, "<li>$1</li>")
-    .replace(/(<li>.*<\/li>)+/gs, (m) => `<ul>${m}</ul>`)
-    .replace(/^\d+\.\s+(.+)$/gm, "<li>$1</li>")
-    .replace(/\n\n+/g, "</p><p>")
-    .replace(/\n/g, "<br>");
+    .replace(/^---$/gm, "<hr>");
+
+  // 3. Process blocks line by line so lists and paragraphs are cleanly formed
+  const lines = raw.split("\n");
+  const blocks = [];
+  let currentList = [];
+
+  function flushList() {
+    if (currentList.length > 0) {
+      blocks.push(`<ul>${currentList.join("")}</ul>`);
+      currentList = [];
+    }
+  }
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+
+    // Check for list item (- item, * item, • item, or 1. item)
+    const bulletMatch = line.match(/^[-*•]\s+(.+)$/);
+    const numMatch = line.match(/^\d+[\.)]\s+(.+)$/);
+
+    if (bulletMatch || numMatch) {
+      const content = bulletMatch ? bulletMatch[1] : numMatch[1];
+      currentList.push(`<li>${content}</li>`);
+    } else {
+      if (line === "") {
+        // If blank line, peek ahead to see if next line continues the list
+        let nextIsList = false;
+        for (let j = i + 1; j < lines.length; j++) {
+          const peek = lines[j].trim();
+          if (peek) {
+            if (peek.match(/^[-*•]\s+/) || peek.match(/^\d+[\.)]\s+/)) {
+              nextIsList = true;
+            }
+            break;
+          }
+        }
+        if (!nextIsList) {
+          flushList();
+        }
+      } else {
+        flushList();
+        blocks.push(`<p>${line}</p>`);
+      }
+    }
+  }
+  flushList();
+
+  return blocks.join("");
 }
 
 // ── Tambahkan Bubble Pesan ────────────────────────────────────────────────
@@ -354,13 +402,17 @@ async function triggerRecommend() {
 
 // ── Helper: Dapatkan Poster Game Berkualitas Tinggi ───────────────────────
 function getGamePosterUrl(game) {
-  // Jika game memiliki Steam AppID, ambil poster header resmi Steam yang tajam
+  // 1. Gambar cover RAWG dari dataset (terbukti 100% valid untuk semua game di dataset)
+  if (
+    game.cover_url &&
+    game.cover_url.startsWith("http") &&
+    !game.cover_url.includes("unsplash")
+  ) {
+    return game.cover_url;
+  }
+  // 2. Poster header Steam
   if (game.steam_appid) {
     return `https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/${game.steam_appid}/header.jpg`;
-  }
-  // Alternatif dari cover_url RAWG
-  if (game.cover_url && game.cover_url.startsWith("http")) {
-    return game.cover_url;
   }
   return "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600&q=80";
 }
@@ -403,7 +455,6 @@ function createGameCardHtml(game, index) {
     : `https://store.steampowered.com/search/?term=${encodeURIComponent(game.title)}`;
 
   const posterUrl = getGamePosterUrl(game);
-  const fallbackUrl = game.cover_url || "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600&q=80";
 
   // Nilai DNA Playstyle (0.0 - 1.0)
   const dna = game.dna || { hardcore: 0.5, complex: 0.5, adrenaline: 0.5 };
@@ -418,7 +469,7 @@ function createGameCardHtml(game, index) {
           src="${posterUrl}" 
           alt="${game.title}" 
           loading="lazy" 
-          onerror="if(this.src!=='${fallbackUrl}'){this.src='${fallbackUrl}'}else{this.src='https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600&q=80';}"
+          onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600&q=80';"
         />
         <div class="game-card-rank">
           <i data-lucide="award"></i>
