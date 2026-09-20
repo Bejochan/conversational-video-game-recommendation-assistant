@@ -7,6 +7,7 @@ import json
 import uuid
 import sys
 import os
+from datetime import datetime
 
 from flask import Flask, Response, jsonify, request, stream_with_context, send_from_directory
 from flask_cors import CORS
@@ -155,6 +156,85 @@ def save_session():
         filepath = _sessions[session_id].save_history(directory=_PROJECT_ROOT)
         filename = os.path.basename(filepath)
         return jsonify({"status": "saved", "filename": filename})
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
+# ── List & Load Session History ───────────────────────────────────────────────
+
+@app.route("/api/session/history", methods=["GET"])
+def list_session_history():
+    """
+    Mengembalikan daftar riwayat sesi yang tersimpan di root proyek.
+    """
+    try:
+        import glob
+        pattern = os.path.join(_PROJECT_ROOT, "riwayat_elysia_*.json")
+        files = glob.glob(pattern)
+        files.sort(key=os.path.getmtime, reverse=True)
+
+        history_list = []
+        for fp in files:
+            fname = os.path.basename(fp)
+            try:
+                with open(fp, "r", encoding="utf-8") as f:
+                    logs = json.load(f)
+                
+                # Cari pesan user pertama untuk judul/preview
+                first_user_msg = next(
+                    (m["content"] for m in logs if m.get("role") == "user"),
+                    "Percakapan tanpa judul"
+                )
+                preview = (first_user_msg[:60] + "...") if len(first_user_msg) > 60 else first_user_msg
+                mtime = os.path.getmtime(fp)
+                dt_str = datetime.fromtimestamp(mtime).strftime("%d %b %Y, %H:%M")
+
+                history_list.append({
+                    "filename": fname,
+                    "preview": preview,
+                    "date": dt_str,
+                    "message_count": len(logs),
+                })
+            except Exception:
+                continue
+
+        return jsonify({"history": history_list})
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/api/session/load", methods=["POST"])
+def load_session_history():
+    """
+    Memuat riwayat sesi dari file JSON dan mengembalikannya ke frontend.
+    Body JSON: { "filename": str }
+    """
+    data = request.get_json(force=True)
+    filename = data.get("filename", "")
+
+    # Security check: pastikan hanya nama file riwayat_elysia_*.json
+    if not filename or not filename.startswith("riwayat_elysia_") or not filename.endswith(".json"):
+        return jsonify({"error": "Nama file riwayat tidak valid."}), 400
+
+    filepath = os.path.join(_PROJECT_ROOT, filename)
+    if not os.path.exists(filepath):
+        return jsonify({"error": "Berkas riwayat tidak ditemukan."}), 404
+
+    try:
+        with open(filepath, "r", encoding="utf-8") as f:
+            logs = json.load(f)
+
+        new_session_id = str(uuid.uuid4())
+        chat = ELYSIAChat()
+        # Restore log
+        chat._log = logs
+        _sessions[new_session_id] = chat
+
+        return jsonify({
+            "session_id": new_session_id,
+            "filename": filename,
+            "messages": logs,
+        })
     except Exception as exc:
         return jsonify({"error": str(exc)}), 500
 

@@ -43,15 +43,26 @@
             <span id="status-text">Menghubungkan...</span>
           </div>
 
-          <button class="btn-icon" id="btn-save" title="Simpan Riwayat Obrolan">
+          <!-- Tombol Riwayat Chat -->
+          <button class="btn-nav" id="btn-history" title="Lihat Riwayat Obrolan Tersimpan">
+            <i data-lucide="history"></i>
+            <span>Riwayat</span>
+          </button>
+
+          <!-- Tombol Simpan Sesi -->
+          <button class="btn-nav" id="btn-save" title="Simpan Riwayat Obrolan Saat Ini">
             <i data-lucide="download"></i>
+            <span>Simpan</span>
           </button>
 
-          <button class="btn-icon" id="btn-clear" title="Mulai Sesi Baru">
+          <!-- Tombol Mulai Sesi Baru -->
+          <button class="btn-nav" id="btn-clear" title="Mulai Sesi Percakapan Baru">
             <i data-lucide="rotate-ccw"></i>
+            <span>Sesi Baru</span>
           </button>
 
-          <button class="btn-icon" id="btn-toggle-sidebar" title="Buka/Tutup Panel Rekomendasi">
+          <!-- Tombol Toggle Panel Rekomendasi di Header -->
+          <button class="btn-icon" id="btn-toggle-sidebar" title="Buka/Tutup Panel Rekomendasi Game">
             <i data-lucide="panel-right"></i>
           </button>
         </div>
@@ -149,7 +160,14 @@
 
     </main>
 
-    <!-- ── Collapsible Recommendations Sidebar ────────────────────────── -->
+    <!-- ── Tombol Sidebar Melayang yang Selalu Ada (Floating Toggle) ──────── -->
+    <button class="floating-sidebar-btn" id="btn-floating-sidebar" title="Buka/Tutup Panel Rekomendasi Game">
+      <i data-lucide="gamepad-2"></i>
+      <span>Rekomendasi Game</span>
+      <span class="floating-badge" id="floating-badge">0</span>
+    </button>
+
+    <!-- ── Collapsible Recommendations Sidebar (Right Drawer) ──────────── -->
     <aside class="sidebar-drawer closed" id="sidebar-drawer">
       <div class="sidebar-header">
         <div class="sidebar-title-group">
@@ -169,11 +187,32 @@
             <i data-lucide="compass"></i>
           </div>
           <h4>Belum Ada Rekomendasi</h4>
-          <p>Diskusikan kesukaan Anda dengan ELYSIA, lalu klik tombol "Rekomendasikan Game" untuk memunculkan pilihan terbaik.</p>
+          <p>Diskusikan kesukaan Anda dengan ELYSIA, lalu klik tombol "Rekomendasikan Game" untuk memunculkan pilihan terbaik lengkap dengan poster.</p>
         </div>
       </div>
     </aside>
 
+  </div>
+
+  <!-- ── History Chat Modal ─────────────────────────────────────────────── -->
+  <div class="modal-overlay" id="history-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>
+          <i data-lucide="history"></i>
+          <span>Riwayat Percakapan</span>
+        </h3>
+        <button class="btn-icon" id="btn-close-history" title="Tutup">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="modal-body" id="history-list">
+        <div class="history-empty">
+          <i data-lucide="inbox"></i>
+          <p>Belum ada riwayat percakapan tersimpan.<br>Klik tombol "Simpan" di bagian atas untuk menyimpan sesi obrolan Anda.</p>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Toast Notification -->

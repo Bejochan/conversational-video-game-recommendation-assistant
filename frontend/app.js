@@ -13,28 +13,38 @@ const API_BASE = window.location.protocol.startsWith("http")
 let sessionId = null;
 let isStreaming = false;
 let messageCount = 0;
+let currentRecommendations = [];
 
 // ── Referensi Elemen DOM ──────────────────────────────────────────────────
-const messagesEl         = document.getElementById("messages");
-const welcomeHeroEl      = document.getElementById("welcome-hero");
-const userInputEl        = document.getElementById("user-input");
-const sendBtnEl          = document.getElementById("send-btn");
-const typingEl           = document.getElementById("typing-indicator");
-const chatScrollEl       = document.getElementById("chat-scroll");
-const toastEl            = document.getElementById("toast");
-const toastTextEl        = document.getElementById("toast-text");
-const toastIconEl        = document.getElementById("toast-icon");
-const statusDotEl        = document.getElementById("status-dot");
-const statusTextEl       = document.getElementById("status-text");
-const btnRecommend       = document.getElementById("btn-recommend");
-const btnSave            = document.getElementById("btn-save");
-const btnClear           = document.getElementById("btn-clear");
-const btnToggleSidebar   = document.getElementById("btn-toggle-sidebar");
-const btnCloseSidebar    = document.getElementById("btn-close-sidebar");
-const sidebarDrawer      = document.getElementById("sidebar-drawer");
-const sidebarCountEl     = document.getElementById("sidebar-count");
-const gameCardsEl        = document.getElementById("game-cards");
-const sidebarEmptyEl     = document.getElementById("sidebar-empty");
+const messagesEl           = document.getElementById("messages");
+const welcomeHeroEl        = document.getElementById("welcome-hero");
+const userInputEl          = document.getElementById("user-input");
+const sendBtnEl            = document.getElementById("send-btn");
+const typingEl             = document.getElementById("typing-indicator");
+const chatScrollEl         = document.getElementById("chat-scroll");
+const toastEl              = document.getElementById("toast");
+const toastTextEl          = document.getElementById("toast-text");
+const toastIconEl          = document.getElementById("toast-icon");
+const statusDotEl          = document.getElementById("status-dot");
+const statusTextEl         = document.getElementById("status-text");
+
+const btnRecommend         = document.getElementById("btn-recommend");
+const btnSave              = document.getElementById("btn-save");
+const btnClear             = document.getElementById("btn-clear");
+const btnHistory           = document.getElementById("btn-history");
+
+const btnToggleSidebar     = document.getElementById("btn-toggle-sidebar");
+const btnFloatingSidebar   = document.getElementById("btn-floating-sidebar");
+const btnCloseSidebar      = document.getElementById("btn-close-sidebar");
+const sidebarDrawer        = document.getElementById("sidebar-drawer");
+const sidebarCountEl       = document.getElementById("sidebar-count");
+const floatingBadgeEl      = document.getElementById("floating-badge");
+const gameCardsEl          = document.getElementById("game-cards");
+const sidebarEmptyEl       = document.getElementById("sidebar-empty");
+
+const historyModal         = document.getElementById("history-modal");
+const btnCloseHistory      = document.getElementById("btn-close-history");
+const historyListEl        = document.getElementById("history-list");
 
 // ── Inisialisasi Ikon Lucide ──────────────────────────────────────────────
 function refreshIcons() {
@@ -90,7 +100,7 @@ sendBtnEl.addEventListener("click", () => {
   }
 });
 
-// ── Event Listener Tombol Navigasi & Sidebar ───────────────────────────────
+// ── Pengendali Buka/Tutup Sidebar (Selalu Tersedia) ────────────────────────
 function toggleSidebar(forceOpen = null) {
   const isClosed = sidebarDrawer.classList.contains("closed");
   const shouldOpen = forceOpen !== null ? forceOpen : isClosed;
@@ -98,13 +108,16 @@ function toggleSidebar(forceOpen = null) {
   if (shouldOpen) {
     sidebarDrawer.classList.remove("closed");
     btnToggleSidebar.classList.add("active");
+    if (btnFloatingSidebar) btnFloatingSidebar.classList.add("sidebar-open");
   } else {
     sidebarDrawer.classList.add("closed");
     btnToggleSidebar.classList.remove("active");
+    if (btnFloatingSidebar) btnFloatingSidebar.classList.remove("sidebar-open");
   }
 }
 
 btnToggleSidebar.addEventListener("click", () => toggleSidebar());
+if (btnFloatingSidebar) btnFloatingSidebar.addEventListener("click", () => toggleSidebar());
 btnCloseSidebar.addEventListener("click", () => toggleSidebar(false));
 
 btnRecommend.addEventListener("click", triggerRecommend);
@@ -262,10 +275,6 @@ async function sendMessage() {
               scrollToBottom();
             }
 
-            if (data.done) {
-              // Selesai streaming
-            }
-
             if (data.error) {
               fullText += `\n\n[Terjadi kendala: ${data.error}]`;
               bubbleEl.innerHTML = `<p>${renderMarkdown(fullText)}</p>`;
@@ -322,8 +331,16 @@ async function triggerRecommend() {
     }
 
     if (result.games && result.games.length > 0) {
-      renderGameRecommendations(result.games);
-      toggleSidebar(true); // Buka sidebar otomatis
+      currentRecommendations = result.games;
+      
+      // 1. Render di sidebar drawer
+      renderSidebarRecommendations(result.games);
+      
+      // 2. Render kartu langsung di dalam aliran chat agar tidak terpotong!
+      renderInChatRecommendations(result.games);
+
+      // 3. Buka sidebar otomatis
+      toggleSidebar(true);
       showToast(`Ditemukan ${result.games.length} rekomendasi game yang cocok.`, "success");
     } else {
       showToast("Tidak ada game yang cocok dengan kriteria saat ini.", "info");
@@ -335,72 +352,74 @@ async function triggerRecommend() {
   }
 }
 
-// ── Render Daftar Rekomendasi Game ────────────────────────────────────────
-function renderGameRecommendations(games) {
-  // Hapus kartu lama kecuali empty placeholder
-  const oldCards = gameCardsEl.querySelectorAll(".game-card");
-  oldCards.forEach((c) => c.remove());
-
-  if (!games || games.length === 0) {
-    if (sidebarEmptyEl) sidebarEmptyEl.style.display = "flex";
-    sidebarCountEl.textContent = "0";
-    return;
+// ── Helper: Dapatkan Poster Game Berkualitas Tinggi ───────────────────────
+function getGamePosterUrl(game) {
+  // Jika game memiliki Steam AppID, ambil poster header resmi Steam yang tajam
+  if (game.steam_appid) {
+    return `https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/${game.steam_appid}/header.jpg`;
   }
+  // Alternatif dari cover_url RAWG
+  if (game.cover_url && game.cover_url.startsWith("http")) {
+    return game.cover_url;
+  }
+  return "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600&q=80";
+}
 
-  if (sidebarEmptyEl) sidebarEmptyEl.style.display = "none";
-  sidebarCountEl.textContent = games.length;
+// ── Template HTML Kartu Game (Lengkap, Poster Jelas, Bebas Terpotong) ──────
+function createGameCardHtml(game, index) {
+  // Format harga IDR
+  let priceText = "Gratis";
+  let originalPriceText = "";
+  if (game.price_idr > 0) {
+    priceText = new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      maximumFractionDigits: 0,
+    }).format(game.price_idr);
 
-  games.forEach((game, index) => {
-    const card = document.createElement("div");
-    card.className = "game-card";
-
-    // Format harga IDR
-    let priceText = "Gratis";
-    let originalPriceText = "";
-    if (game.price_idr > 0) {
-      priceText = new Intl.NumberFormat("id-ID", {
+    if (game.original_price_idr > game.price_idr) {
+      originalPriceText = new Intl.NumberFormat("id-ID", {
         style: "currency",
         currency: "IDR",
         maximumFractionDigits: 0,
-      }).format(game.price_idr);
-
-      if (game.original_price_idr > game.price_idr) {
-        originalPriceText = new Intl.NumberFormat("id-ID", {
-          style: "currency",
-          currency: "IDR",
-          maximumFractionDigits: 0,
-        }).format(game.original_price_idr);
-      }
+      }).format(game.original_price_idr);
     }
+  }
 
-    // Genre list
-    const genresList = (game.genres || "")
-      .split("||")
-      .map((g) => g.trim())
-      .filter((g) => g.length > 0)
-      .slice(0, 3);
+  // Genre tags
+  const genresList = (game.genres || "")
+    .split("||")
+    .map((g) => g.trim())
+    .filter((g) => g.length > 0)
+    .slice(0, 3);
 
-    const genresHtml = genresList
-      .map((g) => `<span class="genre-tag">${g}</span>`)
-      .join("");
+  const genresHtml = genresList
+    .map((g) => `<span class="genre-tag">${g}</span>`)
+    .join("");
 
-    // Steam link
-    const steamUrl = game.steam_appid
-      ? `https://store.steampowered.com/app/${game.steam_appid}/`
-      : `https://store.steampowered.com/search/?term=${encodeURIComponent(game.title)}`;
+  // Steam link
+  const steamUrl = game.steam_appid
+    ? `https://store.steampowered.com/app/${game.steam_appid}/`
+    : `https://store.steampowered.com/search/?term=${encodeURIComponent(game.title)}`;
 
-    // Cover image fallback
-    const coverUrl = game.cover_url || "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600&q=80";
+  const posterUrl = getGamePosterUrl(game);
+  const fallbackUrl = game.cover_url || "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600&q=80";
 
-    // Nilai DNA (0.0 - 1.0)
-    const dna = game.dna || { hardcore: 0.5, complex: 0.5, adrenaline: 0.5 };
-    const hardcorePct = Math.round((dna.hardcore || 0.5) * 100);
-    const complexPct = Math.round((dna.complex || 0.5) * 100);
-    const adrenalinePct = Math.round((dna.adrenaline || 0.5) * 100);
+  // Nilai DNA Playstyle (0.0 - 1.0)
+  const dna = game.dna || { hardcore: 0.5, complex: 0.5, adrenaline: 0.5 };
+  const hardcorePct = Math.round((dna.hardcore || 0.5) * 100);
+  const complexPct = Math.round((dna.complex || 0.5) * 100);
+  const adrenalinePct = Math.round((dna.adrenaline || 0.5) * 100);
 
-    card.innerHTML = `
+  return `
+    <div class="game-card">
       <div class="game-card-banner">
-        <img src="${coverUrl}" alt="${game.title}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600&q=80'" />
+        <img 
+          src="${posterUrl}" 
+          alt="${game.title}" 
+          loading="lazy" 
+          onerror="if(this.src!=='${fallbackUrl}'){this.src='${fallbackUrl}'}else{this.src='https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600&q=80';}"
+        />
         <div class="game-card-rank">
           <i data-lucide="award"></i>
           <span>#${index + 1} — Kecocokan ${game.match_score}%</span>
@@ -451,12 +470,57 @@ function renderGameRecommendations(games) {
           </a>
         </div>
       </div>
-    `;
+    </div>
+  `;
+}
 
-    gameCardsEl.appendChild(card);
+// ── Render Rekomendasi di Sidebar Drawer ──────────────────────────────────
+function renderSidebarRecommendations(games) {
+  const oldCards = gameCardsEl.querySelectorAll(".game-card");
+  oldCards.forEach((c) => c.remove());
+
+  if (!games || games.length === 0) {
+    if (sidebarEmptyEl) sidebarEmptyEl.style.display = "flex";
+    sidebarCountEl.textContent = "0";
+    if (floatingBadgeEl) floatingBadgeEl.textContent = "0";
+    return;
+  }
+
+  if (sidebarEmptyEl) sidebarEmptyEl.style.display = "none";
+  sidebarCountEl.textContent = games.length;
+  if (floatingBadgeEl) floatingBadgeEl.textContent = games.length;
+
+  games.forEach((game, index) => {
+    const temp = document.createElement("div");
+    temp.innerHTML = createGameCardHtml(game, index);
+    gameCardsEl.appendChild(temp.firstElementChild);
   });
 
   refreshIcons();
+}
+
+// ── Render Rekomendasi Langsung di Aliran Bubble Chat (Anti-Terpotong) ────
+function renderInChatRecommendations(games) {
+  const introText = "Berdasarkan analisis Playstyle DNA dan preferensi obrolan Anda, berikut adalah video game terbaik yang saya pilihkan untuk Anda:";
+  const bubble = appendMessage("elysia", introText);
+
+  const deckWrapper = document.createElement("div");
+  deckWrapper.className = "chat-deck-container";
+
+  const grid = document.createElement("div");
+  grid.className = "chat-deck-grid";
+
+  games.forEach((game, index) => {
+    const temp = document.createElement("div");
+    temp.innerHTML = createGameCardHtml(game, index);
+    grid.appendChild(temp.firstElementChild);
+  });
+
+  deckWrapper.appendChild(grid);
+  bubble.appendChild(deckWrapper);
+
+  refreshIcons();
+  scrollToBottom();
 }
 
 // ── Simpan Sesi Percakapan ────────────────────────────────────────────────
@@ -475,7 +539,7 @@ async function saveChat() {
 
     const result = await response.json();
     if (response.ok) {
-      showToast(`Riwayat sesi disimpan: ${result.filename || "sukses"}`, "success");
+      showToast(`Riwayat tersimpan: ${result.filename || "sukses"}`, "success");
     } else {
       throw new Error(result.error || "Gagal menyimpan");
     }
@@ -483,6 +547,110 @@ async function saveChat() {
     showToast(`Gagal menyimpan: ${err.message}`, "error");
   }
 }
+
+// ── Riwayat Obrolan (History Modal) ───────────────────────────────────────
+async function openHistoryModal() {
+  historyModal.classList.add("active");
+  historyListEl.innerHTML = `
+    <div class="history-empty">
+      <i data-lucide="loader-2" class="spin"></i>
+      <p>Memuat daftar riwayat obrolan...</p>
+    </div>
+  `;
+  refreshIcons();
+
+  try {
+    const response = await fetch(`${API_BASE}/session/history`);
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Gagal memuat riwayat");
+    }
+
+    const items = data.history || [];
+    if (items.length === 0) {
+      historyListEl.innerHTML = `
+        <div class="history-empty">
+          <i data-lucide="inbox"></i>
+          <p>Belum ada riwayat percakapan tersimpan.<br>Klik tombol "Simpan" di bagian atas untuk menyimpan obrolan.</p>
+        </div>
+      `;
+      refreshIcons();
+      return;
+    }
+
+    historyListEl.innerHTML = "";
+    items.forEach((item) => {
+      const el = document.createElement("div");
+      el.className = "history-item";
+      el.innerHTML = `
+        <div class="history-item-top">
+          <span>${item.date}</span>
+          <span class="history-item-badge">${item.message_count} pesan</span>
+        </div>
+        <div class="history-item-preview">${item.preview}</div>
+      `;
+
+      el.addEventListener("click", () => loadHistorySession(item.filename));
+      historyListEl.appendChild(el);
+    });
+
+    refreshIcons();
+  } catch (err) {
+    historyListEl.innerHTML = `
+      <div class="history-empty">
+        <i data-lucide="alert-circle"></i>
+        <p>Terjadi kendala saat mengambil riwayat: ${err.message}</p>
+      </div>
+    `;
+    refreshIcons();
+  }
+}
+
+function closeHistoryModal() {
+  historyModal.classList.remove("active");
+}
+
+async function loadHistorySession(filename) {
+  closeHistoryModal();
+  showToast("Memuat riwayat obrolan...", "info");
+
+  try {
+    const response = await fetch(`${API_BASE}/session/load`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ filename }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "Gagal memuat sesi");
+    }
+
+    // Reset UI dan pasang session baru
+    sessionId = data.session_id;
+    messagesEl.innerHTML = "";
+    if (welcomeHeroEl) welcomeHeroEl.style.display = "none";
+    messageCount = 0;
+
+    // Render ulang pesan dari log
+    const msgs = data.messages || [];
+    msgs.forEach((m) => {
+      appendMessage(m.role === "model" ? "elysia" : "user", m.content);
+    });
+
+    showToast("Riwayat obrolan berhasil dimuat kembali.", "success");
+    scrollToBottom();
+  } catch (err) {
+    showToast(`Gagal membuka riwayat: ${err.message}`, "error");
+  }
+}
+
+btnHistory.addEventListener("click", openHistoryModal);
+btnCloseHistory.addEventListener("click", closeHistoryModal);
+historyModal.addEventListener("click", (e) => {
+  if (e.target === historyModal) closeHistoryModal();
+});
 
 // ── Reset Percakapan (Sesi Baru) ──────────────────────────────────────────
 async function resetChat() {
@@ -503,6 +671,7 @@ async function resetChat() {
   // Reset UI
   sessionId = null;
   messageCount = 0;
+  currentRecommendations = [];
   messagesEl.innerHTML = "";
   if (welcomeHeroEl) welcomeHeroEl.style.display = "block";
 
@@ -511,6 +680,7 @@ async function resetChat() {
   oldCards.forEach((c) => c.remove());
   if (sidebarEmptyEl) sidebarEmptyEl.style.display = "flex";
   sidebarCountEl.textContent = "0";
+  if (floatingBadgeEl) floatingBadgeEl.textContent = "0";
 
   showToast("Sesi obrolan baru telah dimulai.", "info");
   refreshIcons();
