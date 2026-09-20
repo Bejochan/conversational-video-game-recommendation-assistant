@@ -18,7 +18,7 @@ class RecommendationEngine:
     def __init__(self):
         self._df = self._load_and_clean()
         self._df = self._precompute_all_dna(self._df)
-        print(f"✅ RecommendationEngine siap: {len(self._df):,} game dimuat.")
+        print(f"[OK] RecommendationEngine siap: {len(self._df):,} game dimuat.")
 
     # ── Load & Clean ─────────────────────────────────────────────────────────
 
@@ -90,11 +90,11 @@ class RecommendationEngine:
         )
 
     def _precompute_all_dna(self, df: pd.DataFrame) -> pd.DataFrame:
-        print("⏳ Menghitung Playstyle DNA untuk seluruh game...")
+        print("[*] Menghitung Playstyle DNA untuk seluruh game...")
         df[["dna_hardcore", "dna_complex", "dna_adrenaline"]] = df.apply(
             self._compute_dna_row, axis=1
         )
-        print("✅ Prekomputasi DNA selesai!")
+        print("[OK] Prekomputasi DNA selesai!")
         return df
 
     # ── Mood Modifier ────────────────────────────────────────────────────────

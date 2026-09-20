@@ -4,7 +4,10 @@
  * Tanpa Emoji — Menggunakan Lucide Icons untuk seluruh ikonografi.
  */
 
-const API_BASE = "http://127.0.0.1:5000/api";
+// Menyesuaikan origin secara otomatis saat diakses via Flask (http://127.0.0.1:5000/) maupun file://
+const API_BASE = window.location.protocol.startsWith("http")
+  ? `${window.location.origin}/api`
+  : "http://127.0.0.1:5000/api";
 
 // ── State Aplikasi ────────────────────────────────────────────────────────
 let sessionId = null;
@@ -252,8 +255,9 @@ async function sendMessage() {
               sessionId = data.session_id;
             }
 
-            if (data.chunk) {
-              fullText += data.chunk;
+            const textChunk = data.chunk !== undefined ? data.chunk : (data.content || "");
+            if (textChunk) {
+              fullText += textChunk;
               bubbleEl.innerHTML = `<p>${renderMarkdown(fullText)}</p>`;
               scrollToBottom();
             }

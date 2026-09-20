@@ -8,18 +8,26 @@ import uuid
 import sys
 import os
 
-from flask import Flask, Response, jsonify, request, stream_with_context
+from flask import Flask, Response, jsonify, request, stream_with_context, send_from_directory
 from flask_cors import CORS
 
 # Pastikan backend bisa diimpor dari root proyek
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, _PROJECT_ROOT)
 
 from backend.config import HOST, PORT, DEBUG
 from backend.chatbot import ELYSIAChat
 from backend.recommendation_algorithm import engine
 
-app = Flask(__name__)
-CORS(app)  # Mengizinkan request dari frontend lokal (berbeda port)
+_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "frontend")
+
+app = Flask(__name__, static_folder=_FRONTEND_DIR, static_url_path="")
+CORS(app)  # Mengizinkan request dari frontend lokal / file:/// / Live Server
+
+@app.route("/")
+def index():
+    """Menyajikan halaman utama frontend langsung dari server Flask."""
+    return send_from_directory(_FRONTEND_DIR, "index.html")
 
 # ── In-memory Session Store ──────────────────────────────────────────────────
 # session_id (str) → ELYSIAChat instance
@@ -39,11 +47,12 @@ def _get_session(session_id: str) -> ELYSIAChat:
 
 @app.route("/api/health", methods=["GET"])
 def health():
-    return jsonify({"status": "ok", "model": "gemini-2.5-flash"})
+    return jsonify({"status": "ok", "model": "gemini-3.5-flash"})
 
 
 # ── Chat (SSE Streaming) ──────────────────────────────────────────────────────
 
+@app.route("/api/chat", methods=["POST"])
 @app.route("/api/chat/stream", methods=["POST"])
 def chat_stream():
     """
@@ -63,10 +72,10 @@ def chat_stream():
 
     def generate():
         # Kirim session_id dulu sebagai event pertama agar frontend menyimpannya
-        yield f"data: {json.dumps({'type': 'session_id', 'session_id': session_id})}\n\n"
+        yield f"data: {json.dumps({'type': 'session_id', 'session_id': session_id, 'chunk': ''})}\n\n"
         for chunk in chat.send_message_stream(message):
-            yield f"data: {json.dumps({'type': 'text', 'content': chunk})}\n\n"
-        yield f"data: {json.dumps({'type': 'done'})}\n\n"
+            yield f"data: {json.dumps({'type': 'text', 'content': chunk, 'chunk': chunk})}\n\n"
+        yield f"data: {json.dumps({'type': 'done', 'done': True})}\n\n"
 
     return Response(
         stream_with_context(generate()),
@@ -161,6 +170,8 @@ def get_genres():
 # ── Entry Point ───────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    print("🚀 ELYSIA Backend Server starting...")
-    print(f"   Running at: http://{HOST}:{PORT}")
+    if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+    print("[*] ELYSIA Backend Server starting...")
+    print(f"    Running at: http://{HOST}:{PORT}")
     app.run(host=HOST, port=PORT, debug=DEBUG, threaded=True)

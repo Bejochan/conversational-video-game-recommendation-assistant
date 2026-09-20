@@ -13,9 +13,9 @@ _PROJECT_ROOT = os.path.dirname(_BASE_DIR)
 _ENV_PATH = os.path.join(_PROJECT_ROOT, ".env")
 
 if os.path.exists(_ENV_PATH):
-    load_dotenv(dotenv_path=_ENV_PATH)
+    load_dotenv(dotenv_path=_ENV_PATH, override=True)
 else:
-    load_dotenv()
+    load_dotenv(override=True)
 
 # ── API Key & Inisialisasi Gemini ────────────────────────────────────────────
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -28,7 +28,7 @@ if not GEMINI_API_KEY:
 genai.configure(api_key=GEMINI_API_KEY)
 
 # ── Model ────────────────────────────────────────────────────────────────────
-MODEL_NAME = "gemini-2.5-flash"
+MODEL_NAME = "gemini-3.5-flash"
 
 # GenerationConfig untuk chat utama (kreatif & komunikatif)
 CHAT_GENERATION_CONFIG = genai.GenerationConfig(
