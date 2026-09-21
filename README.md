@@ -454,7 +454,6 @@ Tabel berikut merangkum proporsi keterlibatan beserta alasan objektif di balik p
 | **Ideasi & Konseptualisasi** | 45% | 55% | Ide dasar dan batasan topik datang dari pengguna, namun elaborasi nama akronim, perumusan dimensi Playstyle DNA secara terstruktur, dan pematangan konsep banyak dieksplorasi bersama AI. |
 | **Penyediaan & Kurasi Data** | 60% | 40% | Pengguna menentukan dan menyediakan dataset game yang digunakan serta menetapkan variabel pentingnya, sedangkan AI membantu penulisan skrip pembersihan dan transformasi data. |
 | **Algoritma Rekomendasi** | 35% | 65% | Pengguna mengidentifikasi kelemahan semantik genre makro dan menetapkan logika bisnis rekomendasi dua tahap, sedangkan formulasi komputasi DNA, vektorisasi Pandas, dan implementasi LLM Neural Re-Ranking dikerjakan oleh AI. |
-
 | **Prompt Engineering & Persona** | 40% | 60% | Karakteristik nada bicara dan batasan ketat (*zero-emoji*) ditentukan oleh pengguna, sementara perancangan teks prompt terstruktur dan skema JSON ekstraksi disusun oleh AI. |
 | **Backend & Integrasi API** | 25% | 75% | Pengguna mengarahkan arsitektur dan kebutuhan endpoint, namun penulisan sintaks kode Flask, integrasi SDK Gemini, SSE streaming, dan penanganan exception sepenuhnya diimplementasikan oleh AI. |
 | **Desain Antarmuka Web (UI/UX)** | 30% | 70% | Arahan estetika (*warm parchment*, gaya editorial manga *Veil*) dan layout berasal dari pengguna, sedangkan seluruh penulisan kode CSS modern, HTML, dan JavaScript interaktif dikerjakan oleh AI. |
