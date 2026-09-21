@@ -1,13 +1,13 @@
 # ELYSIA — Emotionally-adjusted Ludic Yield Spatial Integrated Assistant
 ### Conversational Video Game Recommendation Assistant berbasis Large Language Model (LLM) & Psychographic Playstyle DNA
 
-ELYSIA adalah asisten virtual interaktif berbasis kecerdasan buatan yang memadukan kapabilitas pemahaman bahasa alami dari **Google Gemini API** (`gemini-3.5-flash`) dengan sistem rekomendasi multi-aspek (**Playstyle DNA 3D, Dynamic Mood Modifier, dan Filter Anggaran Steam IDR**) yang diadaptasi dari basis data kurasi 24.082 video game.
+ELYSIA adalah asisten virtual interaktif berbasis kecerdasan buatan yang memadukan kapabilitas pemahaman bahasa alami dari **Google Gemini API** (arsitektur *multi-model cascade* dengan model primer `gemini-3.6-flash`) dengan sistem rekomendasi multi-aspek (**Playstyle DNA 3D, Dynamic Mood Modifier, dan Filter Anggaran Steam IDR**) yang diadaptasi dari basis data kurasi 24.082 video game.
 
 ---
 
 ## Daftar Isi
 1. [Konsep & Pendekatan Asisten](#konsep--pendekatan-asisten)
-2. [Fitur Utama](#fitur-utama)
+2. [Spesifikasi Sistem & Fitur Pokok](#spesifikasi-sistem--fitur-pokok)
 3. [Arsitektur & Alur Kerja Sistem](#arsitektur--alur-kerja-sistem)
 4. [Struktur Repositori](#struktur-repositori)
 5. [Panduan Menjalankan Program (Step-by-Step)](#panduan-menjalankan-program-step-by-step)
@@ -37,18 +37,22 @@ Sistem pencarian video game konvensional umumnya mengandalkan pencocokan kata ku
 
 ---
 
-## Fitur Utama
+## Spesifikasi Sistem & Fitur Pokok
 
-| Kategori | Fitur & Deskripsi |
+ELYSIA dirancang dengan arsitektur modular yang menggabungkan penalaran kognitif Large Language Model dengan komputasi deterministik sistem rekomendasi. Seluruh arsitektur dibangun untuk memenuhi standar keandalan tinggi, interaktivitas multi-lingkungan, dan penanganan galat yang tangguh:
+
+| Komponen & Fitur Pokok | Spesifikasi & Implementasi Arsitektural |
 | :--- | :--- |
-| **LLM Core** | Integrasi dengan **Google Gemini API** (`gemini-3.5-flash`) untuk memahami konteks percakapan multi-turn, ekstraksi preferensi, dan penalaran rekomendasi. |
-| **Persona & Tone Control** | Karakter asisten editorial yang elegan, suportif, berwawasan luas, dan bebas emoji (*zero-emoji constraint*). |
-| **Dynamic Conversation State** | Manajemen riwayat obrolan berbasis sesi yang konsisten untuk memelihara konteks dialog jangka panjang. |
-| **Real-time Streaming Response** | Respons kata-demi-kata secara bertahap (*streaming*) menggunakan SSE (Server-Sent Events) pada Web UI dan generator streaming pada CLI/Notebook. |
-| **Interactive CLI & Notebook Echo** | Loop interaktif di terminal dan notebook yang mencetak input pengguna (`Anda : ...`) dan respon asisten (`ELYSIA : ...`) secara sinkron untuk mempermudah audit dan dokumentasi. |
-| **Save & Load Session History** | Fitur penyimpanan dan pemuatan riwayat sesi obrolan ke format JSON terstruktur lengkap dengan timestamp. |
-| **Hybrid Recommendation Engine** | Kombinasi Content-Based Filtering, kalkulasi jarak Euclidean 3D pada ruang Playstyle DNA, Jaccard Similarity genre, bobot rating Metacritic/RAWG, dan filter harga Steam IDR. |
-| **Editorial Light Web Interface** | Antarmuka web modern bernuansa *warm parchment* yang terinspirasi dari estetika manga *Veil* karya Kotteri dan minimalisme Google Gemini, dilengkapi *slide-over history drawer* dan kartu game interaktif. |
+| **Cloud LLM API & Multi-Model Cascade** | Menggunakan antarmuka resmi **Google Gemini API** (berbasis cloud, bukan model lokal) dengan model primer **`gemini-3.6-flash`**. Dilengkapi mekanisme *failover cascade* otomatis ke model cadangan (`gemini-3.7-flash`, `gemini-3.8-flash`, `gemini-3.5-flash-lite`, `gemini-flash-latest`) untuk menjamin ketersediaan layanan yang tinggi (*high availability*). |
+| **Persona & Rekayasa System Prompt** | Mengimplementasikan `SYSTEM_PROMPT` khusus yang membentuk karakter asisten kurasi game yang santun, suportif, berwawasan mendalam seputar industri video game, serta tunduk pada batasan *zero-emoji policy* untuk menjaga nada bicara editorial yang elegan. |
+| **State Management & Conversation History** | Mengelola memori percakapan multi-turn secara persisten antar giliran dialog (*in-session memory*). Chatbot secara konsisten mengingat preferensi, mood, dan kriteria yang telah disampaikan pengguna pada pesan-pesan sebelumnya. |
+| **Resiliensi & Error Handling Bertingkat** | Sistem dilengkapi proteksi pengecualian (*exception handling*) menyeluruh agar program tidak pernah crash saat menghadapi kendala jaringan atau limitasi kuota (HTTP 429). Jika seluruh model LLM mencapai batas kuota, sistem secara elegan mengaktifkan **Mode Heuristik Terfokus** berbasis ekstraksi kata kunci regex tanpa menghentikan proses rekomendasi. |
+| **Sistem Perintah Kontrol Khusus** | Menyediakan serangkaian instruksi kendali terintegrasi baik pada antarmuka teks maupun web:<br>• `exit` : Mengakhiri sesi interaksi secara bersih.<br>• `clear` / `reset` : Mengosongkan riwayat dialog untuk memulai sesi konsultasi baru.<br>• `save` : Mengekspor transkrip percakapan ke berkas JSON terstruktur.<br>• `recommend` : Memicu analisis preferensi dan kalkulasi kurasi game. |
+| **Dukungan Multi-Environment** | Sistem dapat dioperasikan secara fleksibel di tiga lingkungan eksekusi berbeda:<br>1. **Terminal / Console CLI** (`backend/chatbot.py`): Eksekusi cepat berbasis command-line.<br>2. **Interactive Jupyter Notebook** (`notebooks/chatbot_notebook.ipynb`): Lingkungan riset, pengujian step-by-step, dan pencatatan riwayat dialog sinkron.<br>3. **Fullstack Modern Web Application** (`frontend/` + Flask backend): Pengalaman antarmuka visual penuh dengan drawer riwayat dan visualisasi Playstyle DNA. |
+| **Pipeline Real-Time Streaming** | Menyajikan teks tanggapan secara bertahap kata demi kata (*word-by-word streaming*) untuk interaktivitas real-time, menggunakan Python generator pada lingkungan terminal/notebook dan protokol *Server-Sent Events (SSE)* pada antarmuka web. |
+| **Ekstraksi Preferensi Terstruktur** | Memanfaatkan *structured prompting* dengan keluaran JSON deterministik untuk memetakan bahasa alami pengguna ke dalam parameter matematis: entitas mood, genre, batasan dana IDR, serta estimasi koordinat 3D Playstyle DNA. |
+| **Manajemen Persistensi Sesi (Save & Load)** | Menyediakan kemampuan ekspor riwayat sesi ke berkas JSON berstempel waktu (*timestamped history*) dan pemuatan kembali (*load session*) secara langsung dari antarmuka pengguna. |
+| **Hybrid Recommendation Engine & Visualisasi** | Algoritma kurasi multi-aspek yang memadukan jarak Euclidean 3D DNA, Jaccard Similarity genre, rating Metacritic/RAWG, dan kepatuhan anggaran dana IDR dari basis data 24.082 game, divisualisasikan melalui **SVG 3D Playstyle DNA Radar Chart**. |
 
 ---
 
