@@ -44,7 +44,9 @@ Sistem pencarian video game konvensional umumnya mengandalkan pencocokan kata ku
   - *Calming vs Adrenaline* (0.0 - 1.0): Mengukur spektrum emosional gameplay dari relaksasi meditatif hingga ketegangan aksi berkecepatan tinggi.
 * **Dynamic Mood Modifier**: Menyesuaikan bobot koordinat DNA secara instan mengikuti suasana hati pemain (*Relaxed, Competitive, Immersive, Focused*).
 * **Integrasi Pasar Steam IDR Nyata**: Mempertimbangkan rentang anggaran belanja dalam Rupiah asli serta memperhitungkan promo diskon Steam aktif.
+* **Two-Stage Retrieval & Pemahaman Konteks Semantik Granular**: Mengatasi keterbatasan genre makro (seperti kategori *Action* yang mencampur aduk game senjata api dan pedang). ELYSIA menerapkan kurasi dua tahap: Tahap 1 memfilter kandidat matematis (DNA + genre), dan Tahap 2 memanfaatkan LLM sebagai *Neural Re-Ranker* untuk memahami nuansa spesifik dan batasan negatif (*negative constraints*, misalnya: *"mau tembak-tembakan, tidak mau game pedang"*).
 * **Gaya Komunikasi Editorial & Empatik**: Dirancang dengan persona yang santun, hangat, berpengetahuan mendalam tentang industri video game, serta mematuhi kebijakan *zero-emoji* guna mempertahankan nuansa editorial yang elegan dan profesional.
+
 
 ---
 
@@ -128,6 +130,12 @@ Antarmuka ELYSIA dirancang secara khusus untuk memberikan pengalaman percakapan 
             v
        [ Pengguna ]
 ```
+
+### Alur Kerja Two-Stage Retrieval & Re-Ranking:
+1. **Tahap 1 — Candidate Generation (Penyaringan Cepat & Skalabilitas)**:
+   Sistem memproses basis data 24.082 game menggunakan komputasi vektorisasi NumPy/Pandas dalam waktu < 50 milidetik. Filter mempertimbangkan jarak Euclidean 3D DNA, Jaccard Similarity genre, normalisasi rating, dan kepatuhan anggaran Steam IDR untuk menghasilkan *pool* **25 game kandidat teratas**.
+2. **Tahap 2 — Neural Re-Ranking (Pemahaman Konteks Semantik & Negative Constraints)**:
+   Daftar 25 kandidat tersebut dievaluasi kembali oleh Large Language Model (**Google Gemini**) yang bertindak sebagai *Neural Re-Ranker*. Model meneliti nuansa percakapan pengguna secara mendalam (misal: preferensi tema, sub-mekanik seperti senjata api/tembakan, atau larangan negatif seperti *"gamau game pedang"*, *"jangan horor/zombie"*), lalu memilih **Top 6 game paling presisi** yang bebas dari kontradiksi preferensi pengguna.
 
 ---
 
@@ -369,11 +377,12 @@ ELYSIA : Terima kasih sudah mengobrol! Sampai jumpa di petualangan gaming beriku
    - Menginisialisasi `GenerativeModel` Google Gemini dengan System Prompt persona ELYSIA.
    - Mengatur riwayat percakapan (*conversation history*) multi-turn berbasis sesi.
    - Mengimplementasikan antarmuka interaktif CLI dengan penanganan pengecualian dan fungsi ekspor riwayat chat ke JSON.
+   - Mengimplementasikan fungsi **Two-Stage Re-Ranking** (`rerank_recommendations()` & `RERANK_PROMPT`): memanfaatkan pemahaman semantik Gemini untuk memeriksa preferensi detail pengguna dan mengeliminasi judul yang bertentangan dengan batasan negatif sebelum kartu game disajikan.
 
 4. **`backend/app.py`**:
    - Server backend berbasis Flask yang menyediakan endpoint RESTful:
      - `POST /api/chat`: Endpoint streaming percakapan menggunakan format Server-Sent Events (SSE).
-     - `POST /api/recommend`: Endpoint kalkulasi rekomendasi game terstruktur.
+     - `POST /api/recommend`: Endpoint kurasi cerdas berbasis pipa *Two-Stage Retrieval* (mengambil *candidate pool* 25 game dari engine matematis lalu mengeksekusi LLM Re-Ranking untuk menghasilkan Top 6 game paling presisi).
      - `GET /api/session/history` & `POST /api/session/load`: Pengelolaan sesi obrolan.
    - Melayani penyajian berkas statis frontend secara langsung baik di lokal maupun di cloud container.
 
@@ -406,8 +415,9 @@ Pembagian kontribusi di bawah ini disusun secara objektif dan realistis untuk me
 * **Kontribusi AI**: Membantu penulisan skrip pembersihan data (*data cleaning*), penanganan nilai yang hilang (*missing values*), normalisasi tipe data harga, dan pengujian integritas struktur data dengan Pandas.
 
 #### 3. Formulasi & Implementasi Algoritma Rekomendasi
-* **Kontribusi Human**: Menentukan logika bisnis yang diinginkan (rekomendasi harus mempertimbangkan kedekatan DNA, kemiripan genre, rating kualitas, dan kesesuaian anggaran), serta mengevaluasi apakah hasil rekomendasi terasa masuk akal bagi gamer.
-* **Kontribusi AI**: Merumuskan kalkulasi matematis (jarak Euclidean 3D pada ruang DNA dan Jaccard Similarity pada genre), menyusun formula skor gabungan terbobot (*weighted composite score*), serta mengoptimasi performa komputasi menggunakan vektorisasi NumPy/Pandas agar pencarian 24.082 game berlangsung instan (< 100 ms).
+* **Kontribusi Human**: Menentukan kriteria logika bisnis rekomendasi (kedekatan DNA, genre, rating, dan budget), mengidentifikasi limitasi semantik pada genre makro (seperti game tembak-tembakan vs pedang yang sama-sama bergenre Action), serta mengarahkan penerapan pendekatan *Two-Stage Retrieval*.
+* **Kontribusi AI**: Merumuskan kalkulasi matematis (jarak Euclidean 3D DNA dan Jaccard Similarity genre), menyusun formula komputasi vektorisasi NumPy/Pandas (< 100 ms), serta mengimplementasikan pipa *Two-Stage Neural Re-Ranking* menggunakan LLM Gemini untuk memvalidasi preferensi detail dan batasan negatif pengguna.
+
 
 #### 4. Prompt Engineering & Persona Design
 * **Kontribusi Human**: Menetapkan identitas persona ELYSIA (santun, berwawasan luas, empatik, bernada tenang, dan larangan mutlak penggunaan emoji), serta menentukan skenario interaksi pengguna yang akan diuji.
@@ -443,7 +453,8 @@ Tabel berikut merangkum proporsi keterlibatan beserta alasan objektif di balik p
 | :--- | :---: | :---: | :--- |
 | **Ideasi & Konseptualisasi** | 45% | 55% | Ide dasar dan batasan topik datang dari pengguna, namun elaborasi nama akronim, perumusan dimensi Playstyle DNA secara terstruktur, dan pematangan konsep banyak dieksplorasi bersama AI. |
 | **Penyediaan & Kurasi Data** | 60% | 40% | Pengguna menentukan dan menyediakan dataset game yang digunakan serta menetapkan variabel pentingnya, sedangkan AI membantu penulisan skrip pembersihan dan transformasi data. |
-| **Algoritma Rekomendasi** | 35% | 65% | Pengguna menetapkan kriteria dan logika bisnis rekomendasi, sedangkan formulasi matematis (Euclidean 3D, Jaccard) dan implementasi komputasi vektorisasi efisien dikerjakan oleh AI. |
+| **Algoritma Rekomendasi** | 35% | 65% | Pengguna mengidentifikasi kelemahan semantik genre makro dan menetapkan logika bisnis rekomendasi dua tahap, sedangkan formulasi komputasi DNA, vektorisasi Pandas, dan implementasi LLM Neural Re-Ranking dikerjakan oleh AI. |
+
 | **Prompt Engineering & Persona** | 40% | 60% | Karakteristik nada bicara dan batasan ketat (*zero-emoji*) ditentukan oleh pengguna, sementara perancangan teks prompt terstruktur dan skema JSON ekstraksi disusun oleh AI. |
 | **Backend & Integrasi API** | 25% | 75% | Pengguna mengarahkan arsitektur dan kebutuhan endpoint, namun penulisan sintaks kode Flask, integrasi SDK Gemini, SSE streaming, dan penanganan exception sepenuhnya diimplementasikan oleh AI. |
 | **Desain Antarmuka Web (UI/UX)** | 30% | 70% | Arahan estetika (*warm parchment*, gaya editorial manga *Veil*) dan layout berasal dari pengguna, sedangkan seluruh penulisan kode CSS modern, HTML, dan JavaScript interaktif dikerjakan oleh AI. |
