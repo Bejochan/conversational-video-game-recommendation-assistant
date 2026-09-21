@@ -421,6 +421,10 @@ Pembagian kontribusi di bawah ini disusun secara objektif dan realistis untuk me
 * **Kontribusi Human**: Menentukan struktur pelaporan, menyediakan transkrip chat nyata dan tangkapan layar pengujian, serta memastikan isi dokumentasi jujur dan sesuai dengan hasil eksperimen.
 * **Kontribusi AI**: Menyusun draf teks dokumentasi teknis, menata struktur Markdown, membuat diagram alur ASCII, dan merapikan tabel perbandingan.
 
+#### 9. Deployment Cloud & Konfigurasi Hosting (Render)
+* **Kontribusi Human**: Menyediakan akun platform hosting Render, menghubungkan repositori GitHub, mengonfigurasi variabel lingkungan rahasia (`GEMINI_API_KEY`), memicu proses *continuous deployment*, dan memvalidasi akses publik dari berbagai perangkat.
+* **Kontribusi AI**: Mengadaptasi arsitektur jaringan aplikasi agar kompatibel dengan lingkungan cloud container (*network binding* `0.0.0.0` dan pemetaan port dinamis `$PORT`), mendiagnosis serta menyelesaikan kendala *port scan timeout*, dan menyusun dokumentasi arsitektur cloud.
+
 ---
 
 ### B. Matriks Pembagian Tugas & Rationale Persentase
@@ -435,5 +439,6 @@ Tabel berikut merangkum proporsi keterlibatan beserta alasan objektif di balik p
 | **Prompt Engineering & Persona** | 40% | 60% | Karakteristik nada bicara dan batasan ketat (*zero-emoji*) ditentukan oleh pengguna, sementara perancangan teks prompt terstruktur dan skema JSON ekstraksi disusun oleh AI. |
 | **Backend & Integrasi API** | 25% | 75% | Pengguna mengarahkan arsitektur dan kebutuhan endpoint, namun penulisan sintaks kode Flask, integrasi SDK Gemini, SSE streaming, dan penanganan exception sepenuhnya diimplementasikan oleh AI. |
 | **Desain Antarmuka Web (UI/UX)** | 30% | 70% | Arahan estetika (*warm parchment*, gaya editorial manga *Veil*) dan layout berasal dari pengguna, sedangkan seluruh penulisan kode CSS modern, HTML, dan JavaScript interaktif dikerjakan oleh AI. |
+| **Deployment Cloud (Render)** | 40% | 60% | Pengguna menyiapkan akun hosting, menghubungkan repositori, dan mengelola API key rahasia, sementara AI merekayasa kode network binding, mendiagnosis kegagalan port binding container, dan menyusun spesifikasi cloud. |
 | **Pengujian & Troubleshooting** | 45% | 55% | Pengujian dilakukan langsung oleh pengguna pada lingkungan lokal dan pengguna yang mendeteksi anomali/bug, sementara diagnosis teknis dan penulisan solusi perbaikan dilakukan oleh AI. |
 | **Penyusunan Dokumentasi** | 40% | 60% | Pengguna mengarahkan substansi, data pengujian, dan transparansi laporan, sedangkan penyusunan redaksi kalimat, tata letak tabel, dan formatting dokumen dibantu oleh AI. |
