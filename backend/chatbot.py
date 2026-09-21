@@ -57,6 +57,27 @@ Contoh input: "Capek banget abis ujian, pengen yang santai dan adem. Batasan dan
 Contoh output: {"mood":"relaxed","pref_genres":["casual","adventure","indie"],"max_budget":100000,"dna_estimate":{"hardcore":0.15,"complex":0.2,"adrenaline":0.1}}
 """
 
+# ── Re-Ranking Prompt (Two-Stage Retrieval - Pendekatan B) ───────────────────
+RERANK_PROMPT = """Tugasmu adalah bertindak sebagai ELYSIA Neural Re-Ranker.
+Kamu diberikan konteks percakapan pengguna dan daftar kandidat game dari basis data.
+Pilih maksimal {top_n} game yang PALING TEPAT memenuhi detail spesifik dan batasan pengguna.
+
+ATURAN RE-RANKING:
+1. Perhatikan detail semantik spesifik:
+   - Preferensi positif (misal: gameplay tembak-tembakan/senjata api, eksplorasi santai, taktis, dsb.)
+   - Batasan/pantangan negatif eksplisit (misal: "gamau pedang-pedangan", "bukan game melee", "jangan horor/zombie", dsb.)
+2. ELIMINASI game yang melanggar pantangan atau tidak sesuai fokus gameplay yang diminta pengguna.
+3. Urutkan dari yang paling relevan.
+4. Format output WAJIB HANYA berupa JSON murni:
+{{
+  "selected_ids": [<id_int_1>, <id_int_2>, ...],
+  "curator_notes": {{
+    "<id>": "Alasan singkat mengapa game ini sesuai dengan konteks spesifik pengguna"
+  }}
+}}
+"""
+
+
 
 class ELYSIAChat:
     """
@@ -201,6 +222,79 @@ class ELYSIAChat:
         # Fallback Heuristik Cerdas (Opsi 3)
         print("[*] Menjalankan ekstraksi heuristik berbasis kata kunci (Fallback Mode)...")
         return self._heuristic_extract_preferences(conversation_text)
+
+    def rerank_recommendations(
+        self, candidates: list[dict], user_text: str, top_n: int = 6
+    ) -> list[dict]:
+        """
+        Two-Stage Retrieval (Pendekatan B):
+        Menggunakan LLM Gemini untuk memvalidasi dan mengurutkan ulang (re-rank) kandidat game
+        berdasarkan pemahaman semantik mendalam terhadap konteks detail percakapan pengguna
+        (misal: preferensi senjata api vs pedang, pantangan zombie, dsb).
+        """
+        if not candidates or len(candidates) <= top_n or not user_text.strip():
+            return candidates[:top_n]
+
+        cand_summary = []
+        for c in candidates:
+            cand_summary.append(
+                f"- ID {c['id']}: '{c['title']}' | Genre: {c['genres']} | Skor Awal: {c.get('match_score', 0)}%"
+            )
+        cand_text = "\n".join(cand_summary)
+
+        prompt = (
+            f"KONTEKS PERCAKAPAN PENGGUNA:\n\"\"\"{user_text}\"\"\"\n\n"
+            f"DAFTAR KANDIDAT GAME DARI DATABASE:\n{cand_text}\n\n"
+            f"Pilih maksimal {top_n} game yang paling tepat. Keluarkan JSON murni."
+        )
+
+        for candidate in CANDIDATE_MODELS[self._model_idx :]:
+            try:
+                model = genai.GenerativeModel(
+                    model_name=candidate,
+                    system_instruction=RERANK_PROMPT.format(top_n=top_n),
+                    generation_config=EXTRACTION_GENERATION_CONFIG,
+                )
+                resp = model.generate_content(prompt)
+                raw_text = resp.text.strip()
+
+                if raw_text.startswith("```"):
+                    raw_text = raw_text.split("```")[1]
+                    if raw_text.startswith("json"):
+                        raw_text = raw_text[4:]
+                    raw_text = raw_text.strip()
+
+                parsed = json.loads(raw_text)
+                selected_ids = parsed.get("selected_ids", [])
+                curator_notes = parsed.get("curator_notes", {})
+
+                if selected_ids and isinstance(selected_ids, list):
+                    cand_map = {c["id"]: c for c in candidates}
+                    reranked = []
+                    for gid in selected_ids:
+                        gid_int = int(gid) if str(gid).isdigit() else None
+                        if gid_int in cand_map and cand_map[gid_int] not in reranked:
+                            item = cand_map[gid_int]
+                            note = curator_notes.get(str(gid)) or curator_notes.get(gid_int)
+                            if note:
+                                item["curator_note"] = note
+                            reranked.append(item)
+
+                    # Jika hasil rerank belum mencapai top_n, lengkapi dari sisa kandidat awal
+                    for c in candidates:
+                        if len(reranked) >= top_n:
+                            break
+                        if c not in reranked:
+                            reranked.append(c)
+
+                    print(f"[*] Two-Stage Re-Ranking berhasil memfilter {len(reranked)} game terbaik.")
+                    return reranked[:top_n]
+            except Exception as exc:
+                print(f"[!] Gagal Re-Ranking pada model '{candidate}': {str(exc)[:100]}")
+                continue
+
+        print("[*] Re-Ranking fallback: Mengembalikan urutan peringkat awal.")
+        return candidates[:top_n]
 
     def _heuristic_extract_preferences(self, text: str) -> dict:
         """

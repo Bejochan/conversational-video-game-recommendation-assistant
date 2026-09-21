@@ -68,4 +68,10 @@ Dokumentasi pengujian variasi skenario dialog dengan preferensi bermain yang ber
 ![Pengujian Skenario Tambahan 2](image-7.png)
 
 ### Uji Skenario 3: Kurasi Hasil pada Skenario Berbeda
-![Pengujian Skenario Tambahan 3](image-8.png)
+![Pengujian Skenario Tambahan 3](image-8.png)
+
+---
+
+> [!NOTE]
+> **Catatan Pengujian & Validasi Arsitektur:**  
+> Seluruh tangkapan layar (*screenshot*) pada dokumen ini diambil pada tahap pengujian awal sebelum dilakukannya *debugging* dan penyempurnaan pemahaman konteks mendalam melalui arsitektur **Two-Stage Retrieval (LLM Re-Ranking)**. Pengambilan screenshot tidak diulang kembali setelah implementasi perbaikan tersebut dikarenakan sisa kuota harian *rate limit* Google Gemini API yang sudah sangat terbatas/mepet, sehingga alokasi panggilan API dihemat dan diprioritaskan untuk stabilitas deployment serta validasi fungsional backend. Pembaruan algoritma tahap kedua tersebut berjalan murni di sisi backend guna mengatasi limitasi preferensi semantik granular (seperti membedakan senjata api/tembakan dengan pedang/melee) tanpa mengubah struktur maupun desain visual antarmuka web.

@@ -64,6 +64,8 @@ ELYSIA dirancang dengan arsitektur modular yang menggabungkan penalaran kognitif
 | **Ekstraksi Preferensi Terstruktur** | Memanfaatkan *structured prompting* dengan keluaran JSON deterministik untuk memetakan bahasa alami pengguna ke dalam parameter matematis: entitas mood, genre, batasan dana IDR, serta estimasi koordinat 3D Playstyle DNA. |
 | **Manajemen Persistensi Sesi (Save & Load)** | Menyediakan kemampuan ekspor riwayat sesi ke berkas JSON berstempel waktu (*timestamped history*) dan pemuatan kembali (*load session*) secara langsung dari antarmuka pengguna. |
 | **Hybrid Recommendation Engine & Visualisasi** | Algoritma kurasi multi-aspek yang memadukan jarak Euclidean 3D DNA, Jaccard Similarity genre, rating Metacritic/RAWG, dan kepatuhan anggaran dana IDR dari basis data 24.082 game, divisualisasikan melalui **SVG 3D Playstyle DNA Radar Chart**. |
+| **Two-Stage Retrieval & LLM Re-Ranking** | Mengatasi limitasi genre makro melalui arsitektur 2 tahap: Tahap 1 menyaring 25 kandidat game teratas secara matematis (DNA + Genre + Rating + Harga), kemudian Tahap 2 memanfaatkan LLM Gemini sebagai *Neural Re-Ranker* untuk memvalidasi preferensi detail dan mengeksekusi batasan negatif (misal: membedakan senjata api vs pedang) sebelum menyajikan Top 6 hasil akhir. |
+
 
 ---
 
@@ -107,17 +109,21 @@ Antarmuka ELYSIA dirancang secara khusus untuk memberikan pengalaman percakapan 
             +--> [ Session History & System Prompt Persona ]
             |
             v
-    [ Google Gemini API (gemini-3.5-flash) ]
+    [ Google Gemini API (gemini-3.6-flash) ]
             | (Analisis Konteks, Respon Dialog Alami &
             |  Ekstraksi Entitas JSON: Mood, DNA, Genre, Max Budget)
             v
-  [ Hybrid Recommendation Engine ]
+  [ Tahap 1: Hybrid Recommendation Engine ]
             | (Pencocokan Euclidean 3D DNA + Jaccard Genre + Bobot Rating & Diskon)
             v
       [ Dataset games.csv ] (24.082 Game dengan Data Harga Steam IDR)
             |
+            |--> [ Pool Kandidat 25 Game Teratas ]
             v
-  [ Respons Terkurasi & Kartu Game Interaktif ]
+  [ Tahap 2: LLM Neural Re-Ranker ]
+            | (Validasi Semantik Granular: Senjata Api vs Pedang, Pantangan Negatif)
+            v
+  [ Top 6 Hasil Terkurasi & Kartu Game Interaktif ]
             | (Streaming Penjelasan Naratif + Daftar Rekomendasi Game + Badge Diskon IDR)
             v
        [ Pengguna ]

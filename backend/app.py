@@ -136,9 +136,20 @@ def recommend():
             return jsonify(result)
 
         pref = chat.extract_preferences(user_text)
-        result = engine.get_recommendations(pref, top_n=top_n)
 
-        if pref.get("is_heuristic_fallback"):
+        # Stage 1: Retrieval kandidat game teratas dari algoritma DNA & genre (25 kandidat)
+        candidate_pool_size = max(25, top_n * 4)
+        result = engine.get_recommendations(pref, top_n=candidate_pool_size)
+
+        if not pref.get("is_heuristic_fallback"):
+            # Stage 2: Two-Stage Re-Ranking dengan LLM Gemini (Pendekatan B)
+            reranked_games = chat.rerank_recommendations(
+                result["games"], user_text=user_text, top_n=top_n
+            )
+            result["games"] = reranked_games
+            result["is_fallback"] = False
+        else:
+            result["games"] = result["games"][:top_n]
             result["is_fallback"] = True
             result["fallback_notice"] = {
                 "title": "Kurasi Mode Terfokus",
@@ -148,8 +159,6 @@ def recommend():
                     "Silakan jelajahi kurasi judul di bawah ini atau tekan tombol Rekomendasi Ulang kapan saja."
                 ),
             }
-        else:
-            result["is_fallback"] = False
 
         return jsonify(result)
     except Exception as exc:
