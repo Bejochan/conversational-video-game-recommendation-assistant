@@ -64,12 +64,18 @@ def chat_stream():
     """
     data = request.get_json(force=True)
     session_id = data.get("session_id") or str(uuid.uuid4())
-    message = (data.get("message") or "").strip()
-
-    if not message:
-        return jsonify({"error": "Pesan tidak boleh kosong."}), 400
+    is_regenerate = bool(data.get("regenerate"))
 
     chat = _get_session(session_id)
+
+    if is_regenerate:
+        message = chat.pop_last_turn()
+        if not message:
+            return jsonify({"error": "Tidak ada percakapan sebelumnya untuk ditulis ulang."}), 400
+    else:
+        message = (data.get("message") or "").strip()
+        if not message:
+            return jsonify({"error": "Pesan tidak boleh kosong."}), 400
 
     def generate():
         # Kirim session_id dulu sebagai event pertama agar frontend menyimpannya

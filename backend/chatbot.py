@@ -335,3 +335,25 @@ class ELYSIAChat:
 
     def get_log(self) -> list[dict]:
         return list(self._log)
+
+    def pop_last_turn(self) -> str | None:
+        """
+        Menghapus respons terakhir model (dan mengambil teks pertanyaan pengguna)
+        agar dapat dilakukan regenerasi / rewrite respons tanpa merusak konteks.
+        Mengembalikan teks input pengguna terakhir.
+        """
+        if not self._log:
+            return None
+
+        # Jika entri terakhir adalah respons model, hapus
+        if self._log and self._log[-1].get("role") == "model":
+            self._log.pop()
+
+        # Ambil pertanyaan pengguna terakhir
+        last_user_prompt = None
+        if self._log and self._log[-1].get("role") == "user":
+            last_user_prompt = self._log.pop().get("content")
+
+        # Bangun ulang session Gemini tanpa entri yang di-pop
+        self._rebuild_session()
+        return last_user_prompt

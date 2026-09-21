@@ -221,6 +221,185 @@ function renderMarkdown(text) {
   return blocks.join("");
 }
 
+// ── Toolbar Aksi Pesan (Salin Chat & Tulis Ulang / Rewrite) ─────────────────
+function createMessageActions(role, getPlainTextFn, rowEl, bubbleEl) {
+  const actionsEl = document.createElement("div");
+  actionsEl.className = "message-actions";
+
+  // 1. Tombol Salin Chat
+  const btnCopy = document.createElement("button");
+  btnCopy.type = "button";
+  btnCopy.className = "btn-msg-action btn-copy";
+  btnCopy.title = "Salin teks percakapan";
+  btnCopy.innerHTML = `<i data-lucide="copy"></i><span>Salin</span>`;
+  btnCopy.addEventListener("click", async () => {
+    try {
+      const textToCopy = (getPlainTextFn() || "").trim();
+      if (!textToCopy) return;
+
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(textToCopy);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = textToCopy;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+
+      btnCopy.classList.add("copied");
+      btnCopy.innerHTML = `<i data-lucide="check"></i><span>Tersalin</span>`;
+      refreshIcons();
+      showToast("Pesan berhasil disalin ke papan klip.", "success");
+
+      setTimeout(() => {
+        btnCopy.classList.remove("copied");
+        btnCopy.innerHTML = `<i data-lucide="copy"></i><span>Salin</span>`;
+        refreshIcons();
+      }, 2000);
+    } catch (e) {
+      showToast("Gagal menyalin pesan.", "error");
+    }
+  });
+  actionsEl.appendChild(btnCopy);
+
+  // 2. Jika pesan ELYSIA: Tambahkan opsi Tulis Ulang (Regenerate)
+  if (role === "elysia") {
+    const btnRewrite = document.createElement("button");
+    btnRewrite.type = "button";
+    btnRewrite.className = "btn-msg-action btn-rewrite";
+    btnRewrite.title = "Tulis ulang jawaban ELYSIA";
+    btnRewrite.innerHTML = `<i data-lucide="rotate-cw"></i><span>Tulis Ulang</span>`;
+    btnRewrite.addEventListener("click", () => {
+      rewriteMessage(rowEl, bubbleEl);
+    });
+    actionsEl.appendChild(btnRewrite);
+  }
+
+  // 3. Jika pesan Pengguna: Tambahkan opsi Edit / Tulis Ulang Prompt
+  if (role === "user") {
+    const btnEdit = document.createElement("button");
+    btnEdit.type = "button";
+    btnEdit.className = "btn-msg-action btn-edit";
+    btnEdit.title = "Muat pesan ke input untuk diedit dan dikirim ulang";
+    btnEdit.innerHTML = `<i data-lucide="pencil"></i><span>Edit</span>`;
+    btnEdit.addEventListener("click", () => {
+      const promptText = (getPlainTextFn() || "").trim();
+      userInputEl.value = promptText;
+      userInputEl.dispatchEvent(new Event("input"));
+      userInputEl.focus();
+      scrollToBottom();
+      showToast("Pesan dimuat ke kolom input. Silakan edit dan kirim ulang.", "info");
+    });
+    actionsEl.appendChild(btnEdit);
+  }
+
+  return actionsEl;
+}
+
+// ── Fungsi Tulis Ulang (Regenerate) Respons ELYSIA ─────────────────────────
+async function rewriteMessage(rowEl, bubbleEl) {
+  if (isStreaming) {
+    showToast("Mohon tunggu hingga respons saat ini selesai.", "info");
+    return;
+  }
+
+  if (!sessionId) {
+    showToast("Belum ada riwayat sesi untuk ditulis ulang.", "info");
+    return;
+  }
+
+  // Sembunyikan toolbar aksi saat proses berlangsung
+  const actionsEl = rowEl.querySelector(".message-actions");
+  if (actionsEl) actionsEl.remove();
+
+  isStreaming = true;
+  typingEl.classList.add("active");
+  bubbleEl.innerHTML = `<p><em>Sedang menulis ulang tanggapan...</em></p>`;
+  scrollToBottom();
+
+  let fullText = "";
+
+  try {
+    const response = await fetch(`${API_BASE}/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        session_id: sessionId,
+        regenerate: true,
+      }),
+    });
+
+    if (!response.ok) {
+      const errJson = await response.json().catch(() => ({}));
+      throw new Error(errJson.error || `HTTP ${response.status}`);
+    }
+
+    typingEl.classList.remove("active");
+    bubbleEl.innerHTML = "";
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder("utf-8");
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop();
+
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          const raw = line.slice(6).trim();
+          if (!raw) continue;
+
+          try {
+            const data = JSON.parse(raw);
+            const textChunk = data.chunk !== undefined ? data.chunk : (data.content || "");
+            if (textChunk) {
+              fullText += textChunk;
+              bubbleEl.innerHTML = `<p>${renderMarkdown(fullText)}</p>`;
+              scrollToBottom();
+            }
+
+            if (data.error) {
+              fullText += `\n\n[Terjadi kendala: ${data.error}]`;
+              bubbleEl.innerHTML = `<p>${renderMarkdown(fullText)}</p>`;
+            }
+          } catch (e) {
+            // Abaikan JSON parsial
+          }
+        }
+      }
+    }
+
+    showToast("Tanggapan berhasil ditulis ulang.", "success");
+  } catch (err) {
+    typingEl.classList.remove("active");
+    fullText = `Mohon maaf, terjadi kendala saat menulis ulang tanggapan (${err.message}).`;
+    bubbleEl.innerHTML = `<p>${renderMarkdown(fullText)}</p>`;
+    showToast(`Gagal menulis ulang: ${err.message}`, "error");
+  } finally {
+    isStreaming = false;
+    sendBtnEl.disabled = !userInputEl.value.trim();
+    typingEl.classList.remove("active");
+
+    // Pasang kembali toolbar aksi
+    const bodyEl = rowEl.querySelector(".message-body");
+    if (bodyEl && !bodyEl.querySelector(".message-actions")) {
+      const newActions = createMessageActions("elysia", () => bubbleEl.innerText || fullText, rowEl, bubbleEl);
+      bodyEl.appendChild(newActions);
+    }
+    refreshIcons();
+    scrollToBottom();
+  }
+}
+
 // ── Tambahkan Bubble Pesan ────────────────────────────────────────────────
 function appendMessage(role, content, streaming = false) {
   if (welcomeHeroEl && welcomeHeroEl.style.display !== "none") {
@@ -257,6 +436,12 @@ function appendMessage(role, content, streaming = false) {
 
   body.appendChild(senderLabel);
   body.appendChild(bubble);
+
+  // Jika bukan streaming (misal: pesan user atau pesan riwayat lama), langsung pasang tombol aksi
+  if (!streaming) {
+    const actions = createMessageActions(role, () => bubble.innerText || content, row, bubble);
+    body.appendChild(actions);
+  }
 
   row.appendChild(avatar);
   row.appendChild(body);
@@ -363,6 +548,17 @@ async function sendMessage() {
     isStreaming = false;
     sendBtnEl.disabled = !userInputEl.value.trim();
     typingEl.classList.remove("active");
+
+    // Pasang toolbar aksi pada pesan ELYSIA setelah streaming selesai
+    if (bubbleEl) {
+      const row = bubbleEl.closest(".message-row");
+      const body = bubbleEl.closest(".message-body");
+      if (body && !body.querySelector(".message-actions")) {
+        const actions = createMessageActions("elysia", () => bubbleEl.innerText || fullText, row, bubbleEl);
+        body.appendChild(actions);
+      }
+    }
+
     refreshIcons();
     scrollToBottom();
   }
