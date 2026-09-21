@@ -57,6 +57,7 @@ EXTRACTION_GENERATION_CONFIG = genai.GenerationConfig(
 DATASET_PATH = os.path.join(_PROJECT_ROOT, "data", "games.csv")
 
 # ── Server ───────────────────────────────────────────────────────────────────
-HOST = "127.0.0.1"
-PORT = 5000
-DEBUG = True
+HOST = os.getenv("HOST", "0.0.0.0")
+PORT = int(os.getenv("PORT", 5000))
+DEBUG = os.getenv("FLASK_DEBUG", "false").lower() in ("true", "1")
+
