@@ -170,7 +170,8 @@ conversational-video-game-recommendation-assistant/
 │
 ├── screenshots/                          # Bukti Pengujian & Dokumentasi Visual
 │   ├── Chat Notebook.md                  # Transkrip utuh dialog multi-turn pada pengujian notebook
-│   └── Hasil Percobaan Notebook.png      # Tangkapan layar bukti eksekusi notebook
+│   ├── Hasil Percobaan Notebook.png      # Tangkapan layar bukti eksekusi notebook
+│   └── Chatbot Website.md                # Dokumentasi visual & screenshot antarmuka web live
 │
 ├── .env.example                          # Template konfigurasi variabel lingkungan
 ├── .gitignore                            # Berkas pengecualian Git
@@ -340,7 +341,8 @@ Anda   : exit
 ELYSIA : Terima kasih sudah mengobrol! Sampai jumpa di petualangan gaming berikutnya!
 ```
 
-> Dokumentasi transkrip lengkap dapat dilihat pada [screenshots/Chat Notebook.md](file:///d:/Career/Semester%205/Model%20Bahasa%20Besar%20dan%20Agen%20Kecerdasan%20Buatan/ELYSIA/screenshots/Chat%20Notebook.md) dan tangkapan layar eksekusi pada [screenshots/Hasil Percobaan Notebook.png](file:///d:/Career/Semester%205/Model%20Bahasa%20Besar%20dan%20Agen%20Kecerdasan%20Buatan/ELYSIA/screenshots/Hasil%20Percobaan%20Notebook.png).
+> Dokumentasi pengujian lengkap dapat dilihat pada [screenshots/Chat Notebook.md](file:///d:/Career/Semester%205/Model%20Bahasa%20Besar%20dan%20Agen%20Kecerdasan%20Buatan/ELYSIA/screenshots/Chat%20Notebook.md) (lingkungan notebook), [screenshots/Hasil Percobaan Notebook.png](file:///d:/Career/Semester%205/Model%20Bahasa%20Besar%20dan%20Agen%20Kecerdasan%20Buatan/ELYSIA/screenshots/Hasil%20Percobaan%20Notebook.png), dan dokumentasi visual antarmuka web interaktif pada [screenshots/Chatbot Website.md](file:///d:/Career/Semester%205/Model%20Bahasa%20Besar%20dan%20Agen%20Kecerdasan%20Buatan/ELYSIA/screenshots/Chatbot%20Website.md).
+
 
 ---
 
