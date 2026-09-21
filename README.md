@@ -1,24 +1,35 @@
 # ELYSIA — Emotionally-adjusted Ludic Yield Spatial Integrated Assistant
 ### Conversational Video Game Recommendation Assistant berbasis Large Language Model (LLM) & Psychographic Playstyle DNA
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://elysia-video-game-recommendation.onrender.com/)
+[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![Flask](https://img.shields.io/badge/Flask-3.0+-000000?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
+[![Google Gemini](https://img.shields.io/badge/Google%20Gemini-API-4E75F6?style=for-the-badge&logo=google&logoColor=white)](https://aistudio.google.com/)
+
+> 🌐 **Live Web Application**: [https://elysia-video-game-recommendation.onrender.com/](https://elysia-video-game-recommendation.onrender.com/)
+
 ELYSIA adalah asisten virtual interaktif berbasis kecerdasan buatan yang memadukan kapabilitas pemahaman bahasa alami dari **Google Gemini API** (arsitektur *multi-model cascade* dengan model primer `gemini-3.6-flash`) dengan sistem rekomendasi multi-aspek (**Playstyle DNA 3D, Dynamic Mood Modifier, dan Filter Anggaran Steam IDR**) yang diadaptasi dari basis data kurasi 24.082 video game.
+
 
 ---
 
 ## Daftar Isi
 1. [Konsep & Pendekatan Asisten](#konsep--pendekatan-asisten)
 2. [Spesifikasi Sistem & Fitur Pokok](#spesifikasi-sistem--fitur-pokok)
-3. [Arsitektur & Alur Kerja Sistem](#arsitektur--alur-kerja-sistem)
-4. [Struktur Repositori](#struktur-repositori)
-5. [Panduan Menjalankan Program (Step-by-Step)](#panduan-menjalankan-program-step-by-step)
-   - [A. Eksperimen di Notebook (Jupyter / VS Code)](#a-eksperimen-di-notebook-jupyter--vs-code)
-   - [B. Menjalankan Chatbot Terminal (CLI)](#b-menjalankan-chatbot-terminal-cli)
-   - [C. Menjalankan Web UI Interaktif (Fullstack Flask)](#c-menjalankan-web-ui-interaktif-fullstack-flask)
-6. [Contoh Cuplikan Percakapan & Pengujian](#contoh-cuplikan-percakapan--pengujian)
-7. [Penjelasan Modul Kode](#penjelasan-modul-kode)
-8. [Catatan Pengembangan & Pembagian Jobdesk (Human vs AI)](#catatan-pengembangan--pembagian-jobdesk-human-vs-ai)
-   - [A. Rincian Peran & Tanggung Jawab](#a-rincian-peran--tanggung-jawab)
-   - [B. Matriks Pembagian Tugas & Rationale Persentase](#b-matriks-pembagian-tugas--rationale-persentase)
+3. [Desain Antarmuka (UI/UX) & Interaktivitas Modern](#desain-antarmuka-uiux--interaktivitas-modern)
+4. [Arsitektur & Alur Kerja Sistem](#arsitektur--alur-kerja-sistem)
+5. [Deployment Cloud (Render Web Service)](#deployment-cloud-render-web-service)
+6. [Struktur Repositori](#struktur-repositori)
+7. [Panduan Menjalankan Program (Step-by-Step)](#panduan-menjalankan-program-step-by-step)
+   - [A. Akses Aplikasi Langsung (Live Cloud Demo)](#a-akses-aplikasi-langsung-live-cloud-demo)
+   - [B. Eksperimen di Notebook (Jupyter / VS Code)](#b-eksperimen-di-notebook-jupyter--vs-code)
+   - [C. Menjalankan Chatbot Terminal (CLI)](#c-menjalankan-chatbot-terminal-cli)
+   - [D. Menjalankan Web UI Interaktif Lokal (Fullstack Flask)](#d-menjalankan-web-ui-interaktif-lokal-fullstack-flask)
+8. [Contoh Cuplikan Percakapan & Pengujian](#contoh-cuplikan-percakapan--pengujian)
+9. [Penjelasan Modul Kode](#penjelasan-modul-kode)
+10. [Catatan Pengembangan & Pembagian Jobdesk (Human vs AI)](#catatan-pengembangan--pembagian-jobdesk-human-vs-ai)
+    - [A. Rincian Peran & Tanggung Jawab](#a-rincian-peran--tanggung-jawab)
+    - [B. Matriks Pembagian Tugas & Rationale Persentase](#b-matriks-pembagian-tugas--rationale-persentase)
 
 ---
 
@@ -56,6 +67,35 @@ ELYSIA dirancang dengan arsitektur modular yang menggabungkan penalaran kognitif
 
 ---
 
+## Desain Antarmuka (UI/UX) & Interaktivitas Modern
+
+Antarmuka ELYSIA dirancang secara khusus untuk memberikan pengalaman percakapan yang imersif, tenang, dan bernuansa editorial premium. Menggabungkan prinsip estetika editorial dengan teknologi web modern tanpa dependensi *framework* yang berat (*Pure Vanilla Stack*).
+
+### 1. Filosofi Estetika & Palet Warna
+* **Warm Editorial Parchment**: Terinspirasi dari gaya visual editorial manga *Veil* karya Kotteri serta kesederhanaan interaksi modern Google Gemini.
+* **Palet Warna Kurasi**:
+  - `Background Parchment`: `#FAF7F2` dan `#FFFFFF` (memberikan kenyamanan visual saat membaca narasi panjang).
+  - `Text & Ink Accent`: `#1E1B18` (midnight ink) dan `#5A524C` (charcoal muted).
+  - `Brand & Dynamic Accent`: `#C97A63` (terracotta blush) dan `#7E9A94` (sage mist).
+* **Tipografi Kontras**: Memadukan font serif editorial (*Playfair Display*) untuk judul dan aksen dengan sans-serif modern (*Plus Jakarta Sans*) untuk keterbacaan teks dialog chat.
+
+### 2. Stack Teknologi UI/UX
+* **HTML5 Semantik**: Struktur layout yang terstandarisasi, aksesibel, dengan pemisahan area obrolan, drawer navigasi riwayat sesi, dan modal konfirmasi interaktif.
+* **Vanilla CSS3 Modern**:
+  - Pemanfaatan CSS Variables / Design Tokens terpusat untuk konsistensi margin, warna, dan radius.
+  - Efek *glassmorphism* (`backdrop-filter: blur()`) pada topbar dan panel kontrol.
+  - Animasi mikro halus (*fade-in slide-up*, hover elevation, pulsating dot indicator saat ELYSIA berpikir).
+  - Layout *fully responsive* yang adaptif di layar smartphone maupun desktop lebar.
+* **Vanilla JavaScript (ES6+)**:
+  - **Real-Time SSE Streaming Reader**: Mengonsumsi `text/event-stream` melalui `ReadableStream` bawaan peramban, menyajikan respons dialog kata demi kata secara instan tanpa lag.
+  - **Custom Markdown & Code Parser**: Menerjemahkan format bold, list, dan link secara real-time dari chunk teks streaming.
+  - **Fitur Salin Teks (Copy to Clipboard)**: Tombol salin satu sentuhan pada setiap gelembung pesan pengguna dan asisten, dilengkapi dengan *toast notification* non-intrusif.
+  - **Fitur Tulis Ulang (Regenerate / Rewrite)**: Kemampuan meminta ELYSIA menyusun ulang jawaban alternatif secara otomatis jika pengguna menginginkan sudut pandang kurasi yang berbeda.
+  - **Visualisasi Dinamis 3D Playstyle DNA (SVG Radar Chart)**: Menghitung koordinat poligon SVG di sisi klien secara matematis untuk menampilkan radar profil game (*Hardcore*, *Complexity*, *Adrenaline*).
+  - **Slide-Over History Drawer**: Panel riwayat percakapan yang elegan untuk menyimpan, memuat kembali, atau menghapus arsip percakapan tanpa meninggalkan sesi saat ini.
+
+---
+
 ## Arsitektur & Alur Kerja Sistem
 
 ```text
@@ -82,6 +122,28 @@ ELYSIA dirancang dengan arsitektur modular yang menggabungkan penalaran kognitif
             v
        [ Pengguna ]
 ```
+
+---
+
+## Deployment Cloud (Render Web Service)
+
+ELYSIA telah di-*deploy* secara penuh dan dapat diakses publik tanpa perlu menjalankan *server* lokal melalui platform cloud **Render** sebagai **Web Service**.
+
+> 🌐 **Tautan Layanan Cloud**: [https://elysia-video-game-recommendation.onrender.com/](https://elysia-video-game-recommendation.onrender.com/)
+
+### Spesifikasi Arsitektur Cloud
+| Parameter | Konfigurasi & Implementasi |
+| :--- | :--- |
+| **Penyedia Platform** | [Render.com](https://render.com/) (Fully-managed Cloud Application Platform) |
+| **Tipe Layanan** | **Web Service** (Menyajikan RESTful API Flask, SSE streaming, dan UI statis) |
+| **Lokasi Server (Region)** | **Singapore** (Meminimalkan latensi jaringan bagi pengguna di Indonesia) |
+| **Runtime Environment** | **Python 3** (Linux container) |
+| **Build Command** | `pip install -r requirements.txt` |
+| **Start Command** | `python backend/app.py` |
+| **Host & Port Binding** | Otomatis mengenali host `0.0.0.0` dan memetakan variabel lingkungan `$PORT` dinamis Render |
+| **Manajemen Rahasia** | `GEMINI_API_KEY` disimpan terenkripsi pada *Render Environment Secrets*, aman dari eksposur publik |
+| **Continuous Deployment** | Sinkronisasi otomatis (*Auto-Deploy*) dari branch `main` GitHub setiap kali ada rilis baru |
+| **Manajemen Sumber Daya** | Fitur hemat daya *automatic spin-down* setelah 15 menit tanpa aktivitas pengguna |
 
 ---
 
@@ -126,7 +188,19 @@ conversational-video-game-recommendation-assistant/
 
 ---
 
-### A. Eksperimen di Notebook (Jupyter / VS Code)
+### A. Akses Aplikasi Langsung (Live Cloud Demo)
+
+Cara termudah dan tercepat untuk mencoba ELYSIA adalah langsung melalui peramban web tanpa perlu instalasi lingkungan Python lokal:
+
+1. Buka tautan: [https://elysia-video-game-recommendation.onrender.com/](https://elysia-video-game-recommendation.onrender.com/)
+2. Mulai obrolan dengan mengetik preferensi atau suasana hati (*mood*) bermain game Anda.
+3. Gunakan tombol **Rekomendasikan Game** atau ketik kata kunci rekomendasi untuk memicu kurasi cerdas.
+
+> *Catatan: Jika server sedang dalam kondisi tidur karena periode inaktivitas, proses pemuatan pertama memerlukan waktu sekitar 30–50 detik (cold start).*
+
+---
+
+### B. Eksperimen di Notebook (Jupyter / VS Code)
 
 1. Buka berkas [notebooks/chatbot_notebook.ipynb](file:///d:/Career/Semester%205/Model%20Bahasa%20Besar%20dan%20Agen%20Kecerdasan%20Buatan/ELYSIA/notebooks/chatbot_notebook.ipynb).
 2. Pastikan kernel Python aktif mengarah ke lingkungan kerja virtual Anda.
@@ -139,7 +213,7 @@ conversational-video-game-recommendation-assistant/
 
 ---
 
-### B. Menjalankan Chatbot Terminal (CLI)
+### C. Menjalankan Chatbot Terminal (CLI)
 
 1. **Clone repositori:**
    ```bash
@@ -186,7 +260,7 @@ conversational-video-game-recommendation-assistant/
 
 ---
 
-### C. Menjalankan Web UI Interaktif (Fullstack Flask)
+### D. Menjalankan Web UI Interaktif Lokal (Fullstack Flask)
 
 1. Pastikan dependensi sudah terpasang dan `.env` sudah terisi dengan benar.
 2. Jalankan server aplikasi:
@@ -274,7 +348,8 @@ ELYSIA : Terima kasih sudah mengobrol! Sampai jumpa di petualangan gaming beriku
 
 1. **`backend/config.py`**:
    - Mengelola pemuatan variabel lingkungan secara aman melalui `python-dotenv` dengan parameter `override=True`.
-   - Mengatur parameter dasar LLM (`gemini-3.5-flash`), `temperature = 0.7`, serta validasi ketersediaan berkas dataset.
+   - Mengatur parameter model LLM primer (`gemini-3.6-flash`) beserta daftar *fallback cascade* (`gemini-3.7-flash`, `gemini-3.8-flash`, `gemini-3.5-flash-lite`, `gemini-flash-latest`).
+   - Mengonfigurasi parameter *network binding* yang dinamis (`HOST = 0.0.0.0` dan membaca variabel lingkungan `$PORT`) sehingga aplikasi siap dijalankan baik di localhost maupun di platform cloud Render.
 
 2. **`backend/recommendation_algorithm.py`**:
    - Memuat dataset 24.082 baris data game.
@@ -292,12 +367,15 @@ ELYSIA : Terima kasih sudah mengobrol! Sampai jumpa di petualangan gaming beriku
      - `POST /api/chat`: Endpoint streaming percakapan menggunakan format Server-Sent Events (SSE).
      - `POST /api/recommend`: Endpoint kalkulasi rekomendasi game terstruktur.
      - `GET /api/session/history` & `POST /api/session/load`: Pengelolaan sesi obrolan.
-   - Melayani penyajian berkas statis frontend secara langsung pada port 5000.
+   - Melayani penyajian berkas statis frontend secara langsung baik di lokal maupun di cloud container.
 
 5. **`frontend/` (`index.html`, `style.css`, `app.js`)**:
-   - Desain antarmuka bertema *editorial light aesthetic* bernuansa *warm parchment* dengan tipografi bersih.
-   - Penanganan respons streaming teks menggunakan `ReadableStream` dan parser Markdown khusus.
-   - Drawer geser (*slide-over drawer*) untuk manajemen riwayat sesi chat masa lalu tanpa merusak tampilan header utama.
+   - **Pure Vanilla Web Stack**: Dibangun murni dengan HTML5 Semantik, Modern CSS3, dan Vanilla JavaScript ES6+ tanpa dependensi framework besar.
+   - **Desain Editorial Warm Parchment**: Mengusung tema visual yang menenangkan (`#FAF7F2` parchment dan aksen terakota `#C97A63`) dengan tipografi serif-sans kontras.
+   - **Interaktivitas & Streaming Real-Time**: Penanganan pembacaan chunk teks Server-Sent Events (SSE) menggunakan `ReadableStream` dan parser Markdown internal.
+   - **Fitur Salin & Tulis Ulang Pesan**: Setiap bubble chat dilengkapi tombol aksi praktis untuk menyalin teks ke clipboard (dengan indikator toast) serta tombol tulis ulang (*regenerate*) untuk mendapatkan respons baru dari ELYSIA.
+   - **Visualisasi Dinamis SVG Radar Chart**: Merender grafik radar 3D Playstyle DNA secara instan pada setiap kartu rekomendasi game.
+   - **Drawer Riwayat Sesi**: Panel samping (*slide-over drawer*) yang mulus untuk beralih, memuat, atau mereset sesi percakapan.
 
 ---
 
