@@ -5,7 +5,6 @@
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](#)
 [![Google Gemini API](https://img.shields.io/badge/LLM-Gemini_3.5_Flash-8E75B2?style=for-the-badge&logo=google&logoColor=white)](https://aistudio.google.com/)
 [![Flask REST API](https://img.shields.io/badge/Backend-Flask_SSE-000000?style=for-the-badge&logo=flask&logoColor=white)](#)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](#)
 
 ELYSIA is an intelligent conversational assistant engineered to deliver personalized video game recommendations through natural, empathetic, and structured dialogue. Unlike conventional storefront recommendation engines that rely on static keyword searches and rigid demographic buckets, ELYSIA leverages a **Two-Stage Hybrid Retrieval Pipeline** combining **3D Psychographic Playstyle DNA**, **Jaccard Genre Similarity**, and **Neural LLM Re-Ranking** via Google Gemini to accommodate contextual mood shifts and negative user constraints in real time.
 
@@ -29,7 +28,7 @@ ELYSIA is an intelligent conversational assistant engineered to deliver personal
    - [D. Local Fullstack Flask Web Server](#d-local-fullstack-flask-web-server)
 9. [Sample Conversation Showcase](#sample-conversation-showcase)
 10. [Codebase Module Reference](#codebase-module-reference)
-11. [License & Attributions](#license--attributions)
+11. [Attributions & References](#attributions--references)
 
 ---
 
@@ -40,9 +39,9 @@ Traditional recommender systems often suffer from the "cold start" paradox and s
 ELYSIA bridges this gap through a high-availability conversational interface governed by three pillars:
 * **Empathetic & Polished Persona**: ELYSIA interacts with an articulate, thoughtful, and serene tone, deliberately avoiding generic AI platitudes and emojis to maintain an elegant editorial reading experience.
 * **Psychographic Playstyle DNA (3D Spatiotemporal Vector)**: Quantifies player gaming orientation along three orthogonal continuous axes:
-  * $	ext{Casual} \longleftrightarrow 	ext{Hardcore}$
-  * $	ext{Simple} \longleftrightarrow 	ext{Complex}$
-  * $	ext{Calming} \longleftrightarrow 	ext{Adrenaline}$
+  * Casual $\longleftrightarrow$ Hardcore
+  * Simple $\longleftrightarrow$ Complex
+  * Calming $\longleftrightarrow$ Adrenaline
 * **High-Availability Cascading Multi-Model Resilience**: Engineered with an automated 6-tier fallback circuit breaker across Google Gemini model variants to safeguard against HTTP 429 API rate limits without disrupting user sessions.
 
 ---
@@ -393,7 +392,7 @@ ELYSIA : Thank you for conversing with me. May your upcoming gaming journeys be 
 
 ---
 
-## 📜 License & Attributions
+## 📜 Attributions & References
 
 * **Large Language Model (LLM) Architecture:** [Google Gemini Flash API](https://aistudio.google.com/)
 * **Video Game Metadata Corpus:** [RAWG Video Games Database API](https://rawg.io/apidocs)
