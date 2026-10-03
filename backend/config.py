@@ -30,12 +30,12 @@ genai.configure(api_key=GEMINI_API_KEY)
 # ── Model & Multi-Model Fallback ─────────────────────────────────────────────
 # Urutan prioritas model dengan kecanggihan terdekat dari gemini-3.5-flash:
 CANDIDATE_MODELS = [
-    "gemini-3.6-flash",      # Model dengan kecanggihan & arsitektur terdekat ke 3.5-flash
-    "gemini-3.7-flash",      # Cadangan tingkat 1 (generasi 3.7)
-    "gemini-3.8-flash",      # Cadangan tingkat 2 (generasi 3.8)
-    "gemini-3.5-flash-lite", # Cadangan tingkat 3 (versi ringan & hemat kuota)
-    "gemini-3.5-flash",      # Model awal (digunakan kembali jika kuota harian pulih)
-    "gemini-flash-latest",   # Cadangan alias stabil
+    "gemini-3.5-flash",      # Primary model
+    "gemini-3.6-flash",      # Tier 1 fallback (closest architecture)
+    "gemini-3.7-flash",      # Tier 2 fallback
+    "gemini-3.8-flash",      # Tier 3 fallback
+    "gemini-3.5-flash-lite", # Tier 4 fallback (lightweight / quota-efficient)
+    "gemini-flash-latest",   # Tier 5 fallback (stable alias)
 ]
 
 MODEL_NAME = CANDIDATE_MODELS[0]
